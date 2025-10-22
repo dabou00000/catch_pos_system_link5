@@ -1230,11 +1230,18 @@ function exportProfitPDF(){
     
     try {
         // إنشاء نافذة طباعة محسنة لتقرير الأرباح
-        const printWindow = window.open('', '_blank', 'width=800,height=1000');
+        let printWindow;
+        try {
+            printWindow = window.open('', '_blank', 'width=800,height=1000,scrollbars=yes,resizable=yes');
+        } catch (error) {
+            console.warn('⚠️ فشل في فتح نافذة جديدة، محاولة طريقة بديلة...');
+            printWindow = window.open('', '_blank');
+        }
         
-        if (!printWindow) {
-            console.error('❌ فشل في فتح نافذة الطباعة');
-            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+        if (!printWindow || printWindow.closed) {
+            console.error('❌ فشل في فتح نافذة الطباعة - قد يكون بسبب GitHub Pages');
+            console.log('🔄 محاولة طريقة بديلة للطباعة...');
+            tryAlternativePrint(reportHTML);
             return;
         }
         
@@ -10103,11 +10110,18 @@ function printBarcode() {
         console.log(`📊 تفاصيل الطباعة: ${quantity} × ${productName} (${barcodeNumber})`);
         
         // إنشاء نافذة طباعة محسنة
-        const printWindow = window.open('', '_blank', 'width=600,height=800');
+        let printWindow;
+        try {
+            printWindow = window.open('', '_blank', 'width=600,height=800,scrollbars=yes,resizable=yes');
+        } catch (error) {
+            console.warn('⚠️ فشل في فتح نافذة جديدة، محاولة طريقة بديلة...');
+            printWindow = window.open('', '_blank');
+        }
         
-        if (!printWindow) {
-            console.error('❌ فشل في فتح نافذة الطباعة');
-            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+        if (!printWindow || printWindow.closed) {
+            console.error('❌ فشل في فتح نافذة الطباعة - قد يكون بسبب GitHub Pages');
+            console.log('🔄 محاولة طريقة بديلة للطباعة...');
+            tryAlternativePrint(printContent);
             return;
         }
         
@@ -11308,11 +11322,22 @@ document.getElementById('printInvoiceBtn').addEventListener('click', function() 
 
         // Fallback for browsers (not Electron)
         console.log('🌐 استخدام نافذة المتصفح للطباعة');
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
         
-        if (!printWindow) {
-            console.error('❌ فشل في فتح نافذة الطباعة - قد يكون بسبب حاجز المنبثقات');
-            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+        // 🔥 إصلاح: محاولة فتح نافذة طباعة مع معالجة أفضل للأخطاء
+        let printWindow;
+        try {
+            printWindow = window.open('', '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
+        } catch (error) {
+            console.warn('⚠️ فشل في فتح نافذة جديدة، محاولة طريقة بديلة...');
+            // محاولة فتح بدون خصائص إضافية
+            printWindow = window.open('', '_blank');
+        }
+        
+        if (!printWindow || printWindow.closed) {
+            console.error('❌ فشل في فتح نافذة الطباعة - قد يكون بسبب حاجز المنبثقات أو GitHub Pages');
+            // 🔥 إصلاح: استخدام طريقة بديلة للطباعة على GitHub Pages
+            console.log('🔄 محاولة طريقة بديلة للطباعة...');
+            tryAlternativePrint(invoiceHTML);
             return;
         }
         
@@ -11352,6 +11377,68 @@ document.getElementById('printInvoiceBtn').addEventListener('click', function() 
         showMessage('خطأ في الطباعة: ' + error.message, 'error');
     }
 });
+
+// 🔥 دالة الطباعة البديلة لـ GitHub Pages
+function tryAlternativePrint(invoiceHTML) {
+    console.log('🔄 استخدام طريقة الطباعة البديلة...');
+    
+    try {
+        // إنشاء عنصر مخفي للطباعة
+        const printContainer = document.createElement('div');
+        printContainer.id = 'printContainer';
+        printContainer.style.cssText = `
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            visibility: hidden;
+        `;
+        
+        // إضافة HTML للطباعة
+        printContainer.innerHTML = invoiceHTML;
+        document.body.appendChild(printContainer);
+        
+        // إضافة CSS للطباعة
+        const printStyles = document.createElement('style');
+        printStyles.textContent = `
+            @media print {
+                body * { visibility: hidden; }
+                #printContainer, #printContainer * { visibility: visible; }
+                #printContainer { position: absolute; left: 0; top: 0; width: 100%; }
+                .no-print { display: none !important; }
+            }
+        `;
+        document.head.appendChild(printStyles);
+        
+        // محاولة الطباعة
+        setTimeout(() => {
+            try {
+                window.print();
+                console.log('✅ تم بدء الطباعة بنجاح');
+                showMessage('تم بدء الطباعة! استخدم Ctrl+P إذا لم تظهر نافذة الطباعة.', 'success');
+            } catch (printError) {
+                console.error('❌ فشل في الطباعة:', printError);
+                showMessage('فشل في الطباعة. جرب Ctrl+P يدوياً.', 'error');
+            }
+            
+            // تنظيف العناصر المؤقتة
+            setTimeout(() => {
+                if (printContainer.parentNode) {
+                    printContainer.parentNode.removeChild(printContainer);
+                }
+                if (printStyles.parentNode) {
+                    printStyles.parentNode.removeChild(printStyles);
+                }
+            }, 2000);
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ فشل في الطباعة البديلة:', error);
+        showMessage('فشل في الطباعة. جرب فتح الفاتورة في نافذة جديدة وطباعتها يدوياً.', 'error');
+    }
+}
 
 // تم استبدال دالة حذف المبيعات بنظام الاسترجاع الاحترافي
 
@@ -13145,14 +13232,33 @@ function exportTableToCSV(filename) {
 
 function exportTableToPDF(title) {
     try {
-        const printWindow = window.open('', '_blank');
         const modal = document.querySelector('#reportModal .modal-content');
         const content = modal ? modal.innerHTML : document.getElementById('reportContent').innerHTML;
-        printWindow.document.write(`<!DOCTYPE html><html lang="ar"><head><meta charset="utf-8"><title>${title||'Report'}</title><style>body{font-family: Cairo, Arial; direction: rtl; padding:20px;} table{width:100%; border-collapse:collapse;} th,td{border:1px solid #ddd; padding:8px; text-align:right;} th{background:#f1f5f9;}</style></head><body>${content}</body></html>`);
+        const reportHTML = `<!DOCTYPE html><html lang="ar"><head><meta charset="utf-8"><title>${title||'Report'}</title><style>body{font-family: Cairo, Arial; direction: rtl; padding:20px;} table{width:100%; border-collapse:collapse;} th,td{border:1px solid #ddd; padding:8px; text-align:right;} th{background:#f1f5f9;}</style></head><body>${content}</body></html>`;
+        
+        // محاولة فتح نافذة طباعة
+        let printWindow;
+        try {
+            printWindow = window.open('', '_blank', 'width=800,height=1000,scrollbars=yes,resizable=yes');
+        } catch (error) {
+            console.warn('⚠️ فشل في فتح نافذة جديدة، محاولة طريقة بديلة...');
+            printWindow = window.open('', '_blank');
+        }
+        
+        if (!printWindow || printWindow.closed) {
+            console.log('🔄 استخدام طريقة الطباعة البديلة...');
+            tryAlternativePrint(reportHTML);
+            return;
+        }
+        
+        printWindow.document.write(reportHTML);
         printWindow.document.close();
         printWindow.focus();
         printWindow.print();
-    } catch(e) { console.warn(e); }
+    } catch(e) { 
+        console.warn('فشل في الطباعة، محاولة طريقة بديلة:', e);
+        tryAlternativePrint(`<div style="font-family: Arial; padding: 20px;">${content}</div>`);
+    }
 }
 
 // إعداد أحداث النسخ الاحتياطي والاستيراد
