@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الحل النهائي لمشكلة السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 الحل النهائي لمشكلة السعر</h1>
+        <p>تم إصلاح المشكلة التي تجعل السعر القديم يظهر في العربة</p>
+
+        <div class="solution-box">
+            <h2>🔍 المشكلة المكتشفة:</h2>
+            <div class="code-block">
+// المشكلة من Console:
+السعر USD: 35                    // المنتج يضاف بسعر $35
+item.priceUSD: 35                // priceUSD صحيح
+item.prices: {"retail":{"USD":30}} // لكن prices يحتوي على السعر القديم $30
+💰 استخدام السعر العادي: $30.00  // النتيجة النهائية خاطئة
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🛠️ الحل المطبق:</h2>
+            
+            <h3>1. إصلاح دالة getProductPrice:</h3>
+            <div class="code-block">
+function getProductPrice(product, priceType, currency) {
+    // إذا كان priceUSD مختلف عن prices، استخدم priceUSD مباشرة
+    if (product.priceUSD && (product.priceUSD !== product.prices?.[priceType]?.USD)) {
+        console.log(`🔄 استخدام السعر المحدث مباشرة: $${product.priceUSD}`);
+        return currency === 'USD' ? product.priceUSD : Math.round(product.priceUSD * exchangeRate);
+    }
+    // ... باقي الكود
+}
+            </div>
+            
+            <h3>2. إصلاح دالة updateCart:</h3>
+            <div class="code-block">
+// إذا كان priceUSD مختلف عن السعر في prices، استخدم priceUSD مباشرة
+if (item.priceUSD && item.priceUSD !== getProductPrice(item, priceType, 'USD')) {
+    price = currency === 'USD' ? item.priceUSD : Math.round(item.priceUSD * exchangeRate);
+    console.log(`💰 استخدام السعر المحدث مباشرة: ${formatCurrency(price, currency)}`);
+}
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🧪 اختبار الحل:</h2>
+            
+            <div class="highlight">
+                <h3>الخطوات:</h3>
+                <ol>
+                    <li>افتح Developer Tools (F12) → Console</li>
+                    <li>امسح العربة بالكامل</li>
+                    <li>أضف المنتج "Accesoory 27" للعربة مرة أخرى</li>
+                    <li>راقب رسائل Console للتأكد من:</li>
+                </ol>
+                <div class="code-block">
+🔄 إضافة منتج جديد تماماً: Accesoory 27 بسعر $35
+🔄 استخدام السعر المحدث مباشرة: $35 بدلاً من $30
+💰 استخدام السعر المحدث مباشرة للمنتج Accesoory 27: $35.00
+                </div>
+                <ol start="5">
+                    <li>تأكد من أن السعر في العربة هو $35.00 وليس $30.00</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>✅ النتيجة المتوقعة:</h2>
+            <div class="success">
+                🎉 <strong>الآن يجب أن يعمل الحل بشكل مثالي:</strong><br>
+                • المنتج "Accesoory 27" يظهر بسعر $35.00 في العربة<br>
+                • رسالة "استخدام السعر المحدث مباشرة" تظهر في Console<br>
+                • لا يظهر السعر القديم $30.00<br>
+                • المجموع النهائي صحيح
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📊 رسائل Console المتوقعة:</h2>
+            <div class="code-block">
+=== بدء إضافة المنتج للعربة ===
+🔍 فحص تحديث السعر: السعر القديم=35, السعر الجديد=35
+🔍 تشخيص السعر المفصل:
+  - product.priceUSD (القديم): 35
+  - updatedProduct.priceUSD (الجديد): 35
+  - updatedProduct.prices: {"retail":{"USD":30,"LBP":2685000}}
+  - currentPriceType: retail
+🔄 إضافة منتج جديد تماماً: Accesoory 27 بسعر $35
+تم إضافة منتج جديد للعربة: Accesoory 27
+🔄 استخدام السعر المحدث مباشرة: $35 بدلاً من $30
+💰 استخدام السعر المحدث مباشرة للمنتج Accesoory 27: $35.00
+   - item.priceUSD: 35 (محدث)
+   - السعر من prices: 30 (قديم)
+=== تم تحديث العربة ===
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔧 إذا لم يعمل الحل:</h2>
+            <div class="code-block">
+// حل يدوي في Console
+forceUpdateCartPrices();
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير النتيجة:</h2>
+            <p>بعد اختبار الحل، أخبرني:</p>
+            <ul>
+                <li>هل ظهرت رسالة "استخدام السعر المحدث مباشرة"؟</li>
+                <li>هل تم تحديث السعر من $30 إلى $35 في العربة؟</li>
+                <li>هل يعمل مع جميع المنتجات؟</li>
+                <li>هل لا تزال المشكلة موجودة؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 هذا الحل يجب أن يحل المشكلة نهائياً!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

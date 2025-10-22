@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الحل النهائي - مشكلة السعر المخصص</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #fff;
+        }
+        .step h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 الحل النهائي لمشكلة السعر المخصص</h1>
+        <p>تم اكتشاف السبب الجذري للمشكلة وإصلاحه!</p>
+
+        <div class="solution-box">
+            <h2>🔍 اكتشاف المشكلة:</h2>
+            <div class="warning">
+                <strong>المشكلة:</strong> كان المنتج في العربة يحتوي على "سعر مخصص" (customPriceUSD) قديم، وهذا السعر كان يتم عرضه بدلاً من السعر الجديد المحدث.
+            </div>
+            
+            <div class="info">
+                <strong>السبب:</strong> عندما يتم تعديل سعر منتج، يتم حفظ السعر الجديد في localStorage، لكن المنتج في العربة يحتفظ بالسعر المخصص القديم.
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🛠️ الحل المطبق:</h2>
+            <div class="step">
+                <h3>1. إزالة السعر المخصص القديم</h3>
+                <p>تم إضافة كود لإزالة السعر المخصص القديم عند تحديث المنتج:</p>
+                <div class="code-block">
+// إزالة السعر المخصص القديم إذا كان موجوداً
+if (typeof cartItem.customPriceUSD === 'number') {
+    console.log(`🗑️ إزالة السعر المخصص القديم: $${cartItem.customPriceUSD}`);
+    delete cartItem.customPriceUSD;
+}
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>2. تطبيق الحل في جميع الدوال</h3>
+                <p>تم تطبيق الحل في:</p>
+                <ul>
+                    <li>دالة <code>updateCartProductsFromStorage()</code></li>
+                    <li>دالة <code>forceRefreshPOS()</code></li>
+                    <li>دالة <code>recalculateCartPrices()</code></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🧪 كيفية الاختبار:</h2>
+            <div class="step">
+                <h3>الخطوة 1: اختبار المنتج الحالي</h3>
+                <p>1. اذهب إلى نقطة البيع</p>
+                <p>2. انقر على زر "تحديث الأسعار" (الأزرق بجانب مسح العربة)</p>
+                <p>3. راقب Console للرسائل التالية:</p>
+                <div class="code-block">
+🗑️ إزالة السعر المخصص القديم: $30
+💰 تم تحديث سعر t-shirt: من $30 إلى $32
+✅ تم تحديث منتج في العربة
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 2: اختبار منتج جديد</h3>
+                <p>1. أضف منتج جديد للعربة</p>
+                <p>2. عدّل سعر المنتج في صفحة المنتجات</p>
+                <p>3. ارجع إلى نقطة البيع</p>
+                <p>4. انقر على زر "تحديث الأسعار"</p>
+                <p class="success">يجب أن يظهر السعر الجديد فوراً!</p>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📊 رسائل Console المتوقعة:</h2>
+            <div class="code-block">
+🔄 بدء التحديث الإجباري لنقطة البيع...
+📦 تم تحميل X منتج من localStorage
+🗑️ إزالة السعر المخصص القديم: $30
+💰 تم تحديث سعر t-shirt square (black): من $30 إلى $32
+✅ تم تحديث 1 منتج في العربة
+✅ تم تحديث العربة
+✅ تم تحديث العرض الأفقي
+🎉 تم التحديث الإجباري بنجاح!
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>⚡ الحلول المتاحة:</h2>
+            
+            <div class="step">
+                <h3>الحل الأول: زر التحديث اليدوي</h3>
+                <p>انقر على زر "تحديث الأسعار" في نقطة البيع</p>
+            </div>
+            
+            <div class="step">
+                <h3>الحل الثاني: تحديث من Console</h3>
+                <div class="code-block">
+forceRefreshPOS();
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>الحل الثالث: إزالة السعر المخصص يدوياً</h3>
+                <div class="code-block">
+// إزالة السعر المخصص من منتج معين
+let cartItem = cart.find(item => item.name.includes('t-shirt'));
+if (cartItem && typeof cartItem.customPriceUSD === 'number') {
+    console.log('السعر المخصص القديم:', cartItem.customPriceUSD);
+    delete cartItem.customPriceUSD;
+    updateCart();
+    console.log('تم إزالة السعر المخصص وتحديث العربة');
+}
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>✅ النتيجة المتوقعة:</h2>
+            <div class="success">
+                🎉 يجب أن تظهر الأسعار الجديدة فوراً في نقطة البيع بعد استخدام أي من الحلول أعلاه!
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير النتيجة:</h2>
+            <p>بعد تجربة الحلول أعلاه، أخبرني:</p>
+            <ul>
+                <li>هل ظهرت رسالة "إزالة السعر المخصص القديم" في Console؟</li>
+                <li>هل تم تحديث السعر في العربة؟</li>
+                <li>هل يعمل مع المنتجات الجديدة والموجودة؟</li>
+                <li>هل لا تزال المشكلة موجودة؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 الحل الأسرع: انقر على زر "تحديث الأسعار" في نقطة البيع!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار زر تعديل السعر في العربة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #fff;
+        }
+        .step h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 اختبار زر تعديل السعر في العربة</h1>
+        <p>تم إضافة تشخيص شامل لزر تعديل السعر الموجود بجانب كل منتج في العربة</p>
+
+        <div class="solution-box">
+            <h2>🔍 المشكلة المحددة:</h2>
+            <div class="warning">
+                <strong>المشكلة:</strong> زر "تعديل السعر" الموجود بجانب كل منتج في العربة لا يعمل بشكل صحيح - السعر لا يتغير في الواجهة بعد التعديل.
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🛠️ التشخيص المضافة:</h2>
+            <div class="step">
+                <h3>1. تشخيص دالة updateItemCustomPrice</h3>
+                <p>تم إضافة رسائل console مفصلة لتتبع عملية تحديث السعر المخصص:</p>
+                <div class="code-block">
+🔄 تحديث السعر المخصص للمنتج t-shirt: من $30 إلى $35
+✅ تم حفظ السعر المخصص: $35
+🔄 تم تحديث العربة بعد تعديل السعر
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>2. تشخيص دالة updateCart</h3>
+                <p>تم إضافة رسائل لتتبع كيفية حساب السعر المعروض:</p>
+                <div class="code-block">
+💰 استخدام السعر المخصص للمنتج t-shirt: $35 (العرض: $35.00)
+💰 استخدام السعر العادي للمنتج t-shirt: $32.00
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🧪 كيفية اختبار زر تعديل السعر:</h2>
+            
+            <div class="step">
+                <h3>الخطوة 1: إضافة منتج للعربة</h3>
+                <p>1. اذهب إلى نقطة البيع</p>
+                <p>2. أضف منتج للعربة (مثل "t-shirt square (black)")</p>
+                <p>3. لاحظ السعر المعروض (مثلاً $30.00)</p>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 2: استخدام زر تعديل السعر</h3>
+                <p>1. انقر على زر "تعديل السعر" بجانب المنتج في العربة</p>
+                <p>2. سيظهر حقل تعديل السعر</p>
+                <p>3. أدخل سعر جديد (مثلاً 35)</p>
+                <p>4. اضغط Enter أو انقر خارج الحقل</p>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 3: مراقبة Console</h3>
+                <p>افتح Developer Tools (F12) → Console وراقب الرسائل:</p>
+                <div class="code-block">
+🔄 تحديث السعر المخصص للمنتج t-shirt: من $30 إلى $35
+✅ تم حفظ السعر المخصص: $35
+🔄 تم تحديث العربة بعد تعديل السعر
+💰 استخدام السعر المخصص للمنتج t-shirt: $35 (العرض: $35.00)
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 4: التحقق من التحديث</h3>
+                <p>1. تحقق من أن السعر في العربة تم تحديثه إلى $35.00</p>
+                <p>2. تحقق من أن المجموع النهائي تم تحديثه</p>
+                <p class="success">يجب أن يظهر السعر الجديد فوراً!</p>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔧 حلول إضافية:</h2>
+            
+            <div class="step">
+                <h3>إذا لم يعمل زر تعديل السعر:</h3>
+                <p>جرب هذا الكود في Console:</p>
+                <div class="code-block">
+// تحديث سعر منتج معين يدوياً
+let cartItem = cart.find(item => item.name.includes('t-shirt'));
+if (cartItem) {
+    console.log('المنتج الحالي:', cartItem.name);
+    console.log('السعر الحالي:', cartItem.customPriceUSD || 'غير محدد');
+    console.log('السعر العادي:', cartItem.priceUSD);
+    
+    // تحديث السعر يدوياً
+    cartItem.customPriceUSD = 35; // السعر الجديد
+    updateCart();
+    console.log('تم تحديث السعر يدوياً');
+}
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>تشخيص شامل للعربة:</h3>
+                <div class="code-block">
+// تشخيص شامل للعربة
+console.log('العربة:', cart);
+cart.forEach((item, index) => {
+    console.log(`منتج ${index + 1}:`, {
+        name: item.name,
+        customPrice: item.customPriceUSD,
+        normalPrice: item.priceUSD,
+        selectedPriceType: item.selectedPriceType
+    });
+});
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📊 النتائج المتوقعة:</h2>
+            <div class="success">
+                🎉 يجب أن يعمل زر تعديل السعر الآن مع رسائل تشخيص واضحة في Console!
+            </div>
+            
+            <div class="info">
+                إذا ظهرت رسائل التشخيص في Console، فهذا يعني أن الكود يعمل. إذا لم يتغير السعر في الواجهة، فالمشكلة في العرض وليس في الحفظ.
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير النتيجة:</h2>
+            <p>بعد اختبار زر تعديل السعر، أخبرني:</p>
+            <ul>
+                <li>هل ظهرت رسائل التشخيص في Console؟</li>
+                <li>هل تم حفظ السعر المخصص؟</li>
+                <li>هل تغير السعر في الواجهة؟</li>
+                <li>هل يعمل مع جميع المنتجات؟</li>
+                <li>ما هي الرسائل التي ظهرت في Console؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 مع رسائل التشخيص الجديدة، سنتمكن من تحديد المشكلة بدقة!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

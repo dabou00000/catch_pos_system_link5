@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشخيص مشكلة تحديث السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-step {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .debug-step h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .code-block {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 تشخيص مشكلة تحديث السعر في نقطة البيع</h1>
+        
+        <div class="debug-step">
+            <h3>📋 خطوات التشخيص:</h3>
+            <ol>
+                <li>افتح Developer Tools (F12)</li>
+                <li>اذهب إلى تبويب Console</li>
+                <li>اتبع الخطوات التالية وراقب الرسائل في Console</li>
+            </ol>
+        </div>
+
+        <div class="debug-step">
+            <h3>🧪 اختبار 1: فحص إعادة تحميل المنتجات</h3>
+            <ol>
+                <li>افتح نقطة البيع</li>
+                <li>افتح Console</li>
+                <li>اكتب هذا الأمر في Console:</li>
+                <div class="code-block">
+products.length
+                </div>
+                <li>اذكر عدد المنتجات</li>
+                <li>اذهب إلى صفحة المنتجات وأضف منتج جديد</li>
+                <li>ارجع إلى نقطة البيع</li>
+                <li>اكتب مرة أخرى:</li>
+                <div class="code-block">
+products.length
+                </div>
+                <li>هل زاد العدد؟</li>
+            </ol>
+        </div>
+
+        <div class="debug-step">
+            <h3>🧪 اختبار 2: فحص تحديث السعر</h3>
+            <ol>
+                <li>ابحث عن منتج معين في نقطة البيع (مثل "t-shirt")</li>
+                <li>سجل السعر المعروض</li>
+                <li>اذهب إلى صفحة المنتجات</li>
+                <li>عدّل سعر نفس المنتج</li>
+                <li>احفظ التعديل</li>
+                <li>راقب Console للرسائل التالية:</li>
+                <div class="code-block">
+🔄 محاولة تحديث نقطة البيع...
+✅ نقطة البيع نشطة، يتم التحديث...
+📦 تم تحميل X منتج
+✅ تم تحديث نقطة البيع بنجاح
+                </div>
+                <li>ارجع إلى نقطة البيع وابحث عن نفس المنتج</li>
+                <li>هل تغير السعر؟</li>
+            </ol>
+        </div>
+
+        <div class="debug-step">
+            <h3>🧪 اختبار 3: فحص localStorage</h3>
+            <ol>
+                <li>في Console، اكتب:</li>
+                <div class="code-block">
+JSON.parse(localStorage.getItem('products')).length
+                </div>
+                <li>سجل العدد</li>
+                <li>ابحث عن منتج معين:</li>
+                <div class="code-block">
+JSON.parse(localStorage.getItem('products')).find(p => p.name.includes('t-shirt'))
+                </div>
+                <li>سجل السعر المعروض</li>
+                <li>عدّل سعر المنتج في صفحة المنتجات</li>
+                <li>كرر الخطوة 4 و 5</li>
+                <li>هل تغير السعر في localStorage؟</li>
+            </ol>
+        </div>
+
+        <div class="debug-step">
+            <h3>🧪 اختبار 4: فحص دالة getProductPrice</h3>
+            <ol>
+                <li>في Console، اكتب:</li>
+                <div class="code-block">
+let testProduct = products.find(p => p.name.includes('t-shirt'));
+if (testProduct) {
+    console.log('المنتج:', testProduct.name);
+    console.log('السعر المفرق USD:', getProductPrice(testProduct, 'retail', 'USD'));
+    console.log('السعر الجملة USD:', getProductPrice(testProduct, 'wholesale', 'USD'));
+    console.log('السعر المميز USD:', getProductPrice(testProduct, 'vip', 'USD'));
+} else {
+    console.log('لم يتم العثور على المنتج');
+}
+                </div>
+                <li>سجل النتائج</li>
+            </ol>
+        </div>
+
+        <div class="debug-step">
+            <h3>📊 النتائج المتوقعة:</h3>
+            <ul>
+                <li class="success">اختبار 1: يجب أن يزيد عدد المنتجات</li>
+                <li class="success">اختبار 2: يجب أن تظهر رسائل التحديث في Console</li>
+                <li class="success">اختبار 3: يجب أن يتغير السعر في localStorage</li>
+                <li class="success">اختبار 4: يجب أن تظهر الأسعار الصحيحة</li>
+            </ul>
+        </div>
+
+        <div class="debug-step">
+            <h3>⚠️ إذا لم تعمل الاختبارات:</h3>
+            <ul>
+                <li class="error">اختبار 1 فشل: مشكلة في إعادة تحميل المنتجات</li>
+                <li class="error">اختبار 2 فشل: دالة updatePOSIfActive لا تعمل</li>
+                <li class="error">اختبار 3 فشل: مشكلة في حفظ البيانات</li>
+                <li class="error">اختبار 4 فشل: مشكلة في دالة getProductPrice</li>
+            </ul>
+        </div>
+
+        <div class="debug-step">
+            <h3>🔧 حلول محتملة:</h3>
+            <ul>
+                <li class="warning">إذا فشل اختبار 1: تحقق من دالة loadFromStorage</li>
+                <li class="warning">إذا فشل اختبار 2: تحقق من أن POS نشط عند التعديل</li>
+                <li class="warning">إذا فشل اختبار 3: تحقق من دالة saveToStorage</li>
+                <li class="warning">إذا فشل اختبار 4: تحقق من بنية بيانات المنتج</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

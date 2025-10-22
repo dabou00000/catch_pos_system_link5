@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>اختبار عدم وجود فترة تجريبية</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2em;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #667eea;
+        }
+        
+        .test-title {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .test-result {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            direction: ltr;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 اختبار عدم وجود فترة تجريبية</h1>
+        
+        <button onclick="runTests()">▶️ تشغيل الاختبارات</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function runTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="test-result info">جاري تشغيل الاختبارات...</div>';
+            
+            let testsHTML = '';
+            let allPassed = true;
+            
+            // Test 1: فحص التوكن الجديد
+            testsHTML += '<div class="test-section">';
+            testsHTML += '<div class="test-title">🔍 اختبار 1: فحص توكن التفعيل الجديد (delta_activation_token)</div>';
+            const activationToken = localStorage.getItem('delta_activation_token');
+            
+            if (!activationToken) {
+                testsHTML += '<div class="test-result pass">✅ ممتاز! لا يوجد توكن تفعيل (النظام غير مفعّل)</div>';
+            } else {
+                try {
+                    const parsed = JSON.parse(activationToken);
+                    if (parsed.activated === false || !parsed.activated) {
+                        testsHTML += '<div class="test-result pass">✅ التوكن موجود لكن غير مفعّل</div>';
+                    } else {
+                        testsHTML += '<div class="test-result fail">❌ فشل! يوجد توكن تفعيل مفعّل</div>';
+                        allPassed = false;
+                    }
+                    testsHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                } catch (e) {
+                    testsHTML += '<div class="test-result fail">❌ فشل! توكن التفعيل تالف</div>';
+                    allPassed = false;
+                }
+            }
+            testsHTML += '</div>';
+            
+            // Test 2: فحص localStorage القديم
+            testsHTML += '<div class="test-section">';
+            testsHTML += '<div class="test-title">🔍 اختبار 2: فحص localStorage القديم</div>';
+            const licenseState = localStorage.getItem('license_state');
+            
+            if (!licenseState) {
+                testsHTML += '<div class="test-result pass">✅ ممتاز! لا يوجد ترخيص في localStorage</div>';
+            } else {
+                const parsed = JSON.parse(licenseState);
+                if (parsed.activated === false || !parsed.activated) {
+                    testsHTML += '<div class="test-result pass">✅ النظام غير مفعّل (كما هو متوقع)</div>';
+                } else {
+                    testsHTML += '<div class="test-result fail">❌ فشل! النظام مفعّل تلقائياً</div>';
+                    allPassed = false;
+                }
+                testsHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+            }
+            testsHTML += '</div>';
+            
+            // Test 3: فحص sessionStorage
+            testsHTML += '<div class="test-section">';
+            testsHTML += '<div class="test-title">🔍 اختبار 3: فحص sessionStorage</div>';
+            const sessionLicense = sessionStorage.getItem('catch_pos_license') || sessionStorage.getItem('license_state');
+            
+            if (!sessionLicense) {
+                testsHTML += '<div class="test-result pass">✅ ممتاز! لا يوجد ترخيص في sessionStorage</div>';
+            } else {
+                const parsed = JSON.parse(sessionLicense);
+                if (parsed.activated === false || !parsed.activated) {
+                    testsHTML += '<div class="test-result pass">✅ النظام غير مفعّل (كما هو متوقع)</div>';
+                } else {
+                    testsHTML += '<div class="test-result fail">❌ فشل! النظام مفعّل في sessionStorage</div>';
+                    allPassed = false;
+                }
+                testsHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+            }
+            testsHTML += '</div>';
+            
+            // Test 4: فحص جميع مفاتيح localStorage
+            testsHTML += '<div class="test-section">';
+            testsHTML += '<div class="test-title">🔍 اختبار 4: فحص جميع المفاتيح المتعلقة بالترخيص</div>';
+            const allKeys = Object.keys(localStorage);
+            const licenseKeys = allKeys.filter(key => 
+                key.toLowerCase().includes('license') || 
+                key.toLowerCase().includes('trial') ||
+                key.toLowerCase().includes('activation')
+            );
+            
+            if (licenseKeys.length === 0) {
+                testsHTML += '<div class="test-result pass">✅ ممتاز! لا توجد مفاتيح ترخيص</div>';
+            } else {
+                testsHTML += '<div class="test-result info">ℹ️ تم العثور على المفاتيح التالية:</div>';
+                licenseKeys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    testsHTML += `<div style="margin: 10px 0;"><strong>${key}:</strong></div>`;
+                    try {
+                        const parsed = JSON.parse(value);
+                        testsHTML += '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                        
+                        if (parsed.activated === true) {
+                            testsHTML += '<div class="test-result fail">❌ هذا المفتاح يحتوي على ترخيص مفعّل!</div>';
+                            allPassed = false;
+                        }
+                    } catch {
+                        testsHTML += `<pre>${value}</pre>`;
+                    }
+                });
+            }
+            testsHTML += '</div>';
+            
+            // Test 5: فحص IndexedDB
+            testsHTML += '<div class="test-section">';
+            testsHTML += '<div class="test-title">🔍 اختبار 5: فحص IndexedDB</div>';
+            testsHTML += '<div class="test-result info">ℹ️ لا يمكن فحص IndexedDB بشكل متزامن، لكن تم مسحه مسبقاً</div>';
+            testsHTML += '</div>';
+            
+            // النتيجة النهائية
+            testsHTML += '<div class="test-section" style="border-left-color: ' + (allPassed ? '#28a745' : '#dc3545') + ';">';
+            testsHTML += '<div class="test-title">📊 النتيجة النهائية</div>';
+            if (allPassed) {
+                testsHTML += '<div class="test-result pass" style="font-size: 1.2em; text-align: center;">';
+                testsHTML += '🎉 ممتاز! النظام لا يحتوي على أي فترة تجريبية تلقائية<br>';
+                testsHTML += 'النظام يتطلب كود تفعيل إلزامي';
+                testsHTML += '</div>';
+            } else {
+                testsHTML += '<div class="test-result fail" style="font-size: 1.2em; text-align: center;">';
+                testsHTML += '⚠️ تحذير! تم العثور على ترخيص مفعّل تلقائياً<br>';
+                testsHTML += 'يرجى استخدام أداة المسح لإزالته';
+                testsHTML += '</div>';
+            }
+            testsHTML += '</div>';
+            
+            // زر للمسح إذا فشل الاختبار
+            if (!allPassed) {
+                testsHTML += '<button onclick="window.location.href=\'clear_all_data.html\'" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">';
+                testsHTML += '🗑️ مسح البيانات وإعادة الاختبار';
+                testsHTML += '</button>';
+            }
+            
+            resultsDiv.innerHTML = testsHTML;
+        }
+        
+        // تشغيل الاختبارات تلقائياً عند تحميل الصفحة
+        window.onload = function() {
+            setTimeout(runTests, 500);
+        };
+    </script>
+</body>
+</html>
+

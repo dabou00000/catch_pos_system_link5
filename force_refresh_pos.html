@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حل إجباري لتحديث السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .button {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #218838;
+        }
+        .warning {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 حل إجباري لمشكلة تحديث السعر</h1>
+        
+        <div class="solution">
+            <h2>📋 الخطوات الإجبارية:</h2>
+            <ol>
+                <li>افتح Developer Tools (F12) → Console</li>
+                <li>اذهب إلى نقطة البيع</li>
+                <li>انسخ والصق هذا الكود في Console:</li>
+            </ol>
+            
+            <div class="code">
+// حل إجباري لتحديث السعر في نقطة البيع
+function forceUpdatePOS() {
+    console.log('🔄 بدء التحديث الإجباري...');
+    
+    // 1. إعادة تحميل المنتجات من localStorage
+    products = JSON.parse(localStorage.getItem('products') || '[]');
+    console.log('📦 تم تحميل', products.length, 'منتج');
+    
+    // 2. تحديث كل منتج في العربة
+    if (cart && cart.length > 0) {
+        cart.forEach((cartItem, index) => {
+            const updatedProduct = products.find(p => p.id === cartItem.id);
+            if (updatedProduct) {
+                console.log(`🔄 تحديث منتج ${index + 1}: ${cartItem.name}`);
+                console.log(`   السعر القديم: $${cartItem.priceUSD}`);
+                console.log(`   السعر الجديد: $${updatedProduct.priceUSD}`);
+                
+                // تحديث جميع البيانات
+                cartItem.name = updatedProduct.name;
+                cartItem.priceUSD = updatedProduct.priceUSD;
+                cartItem.priceLBP = updatedProduct.priceLBP;
+                cartItem.prices = updatedProduct.prices;
+                cartItem.stock = updatedProduct.stock;
+                cartItem.category = updatedProduct.category;
+                cartItem.barcode = updatedProduct.barcode;
+            }
+        });
+    }
+    
+    // 3. إعادة عرض العربة
+    if (typeof updateCart === 'function') {
+        updateCart();
+        console.log('✅ تم تحديث العربة');
+    }
+    
+    // 4. إعادة عرض العربة الأفقي
+    if (typeof updateCartHorizontalDisplay === 'function') {
+        updateCartHorizontalDisplay();
+        console.log('✅ تم تحديث العرض الأفقي');
+    }
+    
+    console.log('🎉 تم التحديث الإجباري بنجاح!');
+}
+
+// تشغيل التحديث
+forceUpdatePOS();
+            </div>
+        </div>
+        
+        <div class="solution">
+            <h2>🔧 حل بديل - تحديث يدوي:</h2>
+            <p>إذا لم يعمل الحل أعلاه، جرب هذا:</p>
+            
+            <div class="code">
+// حل يدوي لتحديث سعر منتج معين
+function updateSpecificProduct(productId, newPriceUSD) {
+    // تحديث في localStorage
+    let products = JSON.parse(localStorage.getItem('products') || '[]');
+    let product = products.find(p => p.id === productId);
+    if (product) {
+        product.priceUSD = newPriceUSD;
+        product.priceLBP = Math.round(newPriceUSD * 90000); // افتراض سعر صرف 90000
+        localStorage.setItem('products', JSON.stringify(products));
+        console.log(`✅ تم تحديث سعر المنتج ${product.name} إلى $${newPriceUSD}`);
+    }
+    
+    // تحديث في العربة
+    if (cart && cart.length > 0) {
+        let cartItem = cart.find(item => item.id === productId);
+        if (cartItem) {
+            cartItem.priceUSD = newPriceUSD;
+            cartItem.priceLBP = Math.round(newPriceUSD * 90000);
+            console.log(`✅ تم تحديث سعر المنتج في العربة`);
+        }
+    }
+    
+    // إعادة عرض العربة
+    if (typeof updateCart === 'function') {
+        updateCart();
+    }
+}
+
+// مثال: تحديث منتج بمعرف 1 إلى سعر $35
+// updateSpecificProduct(1, 35);
+            </div>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ تحذير مهم:</h3>
+            <p>هذا حل مؤقت. بعد استخدامه، يجب أن نجد السبب الجذري للمشكلة ونصلحه في الكود الأساسي.</p>
+        </div>
+        
+        <div class="solution">
+            <h2>🔍 تشخيص المشكلة:</h2>
+            <p>انسخ والصق هذا الكود في Console لتشخيص المشكلة:</p>
+            
+            <div class="code">
+// تشخيص مشكلة تحديث السعر
+function diagnosePriceUpdate() {
+    console.log('🔍 بدء التشخيص...');
+    
+    // 1. فحص localStorage
+    let storedProducts = JSON.parse(localStorage.getItem('products') || '[]');
+    console.log('📦 عدد المنتجات في localStorage:', storedProducts.length);
+    
+    // 2. فحص متغير products
+    console.log('📦 عدد المنتجات في المتغير:', products.length);
+    
+    // 3. فحص العربة
+    console.log('🛒 عدد المنتجات في العربة:', cart.length);
+    
+    // 4. فحص منتج معين (غير محدد)
+    let testProduct = storedProducts.find(p => p.name.includes('t-shirt'));
+    if (testProduct) {
+        console.log('🧪 منتج الاختبار:', testProduct.name);
+        console.log('   السعر في localStorage:', testProduct.priceUSD);
+        console.log('   الأسعار المتعددة:', testProduct.prices);
+    }
+    
+    // 5. فحص المنتج في العربة
+    if (cart.length > 0) {
+        let cartProduct = cart.find(item => item.name.includes('t-shirt'));
+        if (cartProduct) {
+            console.log('🛒 المنتج في العربة:', cartProduct.name);
+            console.log('   السعر في العربة:', cartProduct.priceUSD);
+            console.log('   الأسعار المتعددة:', cartProduct.prices);
+        }
+    }
+    
+    console.log('✅ انتهى التشخيص');
+}
+
+diagnosePriceUpdate();
+            </div>
+        </div>
+        
+        <div class="solution">
+            <h2>📞 معلومات للتقرير:</h2>
+            <p>بعد تشغيل الكود أعلاه، أرسل لي:</p>
+            <ul>
+                <li>نتائج التشخيص</li>
+                <li>هل عمل الحل الإجباري؟</li>
+                <li>ما هي الرسائل التي ظهرت في Console؟</li>
+                <li>هل توجد أخطاء؟</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

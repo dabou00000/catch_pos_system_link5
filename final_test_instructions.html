@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاختبار النهائي - إصلاح تحديث السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .final-test {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .header p {
+            color: #666;
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+        }
+        .test-section {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+            background-color: #f8fff9;
+        }
+        .test-section h3 {
+            color: #155724;
+            margin: 0 0 15px 0;
+            font-size: 1.3em;
+        }
+        .step {
+            margin: 12px 0;
+            padding: 12px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .step h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+        .step p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            color: #495057;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+            background-color: #d4edda;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .warning {
+            color: #856404;
+            background-color: #fff3cd;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .console-output {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin: 10px 0;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <div class="final-test">
+        <div class="header">
+            <h1>🎯 الاختبار النهائي</h1>
+            <p>إصلاح تحديث السعر في نقطة البيع</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 الإصلاحات المطبقة في هذا الإصدار:</h3>
+            <div class="step">
+                <h4>1. تحديث المنتجات في العربة</h4>
+                <p>إضافة دالة <code>updateCartProductsFromStorage()</code> لتحديث جميع المنتجات في العربة عند تعديل المنتج الأصلي</p>
+            </div>
+            <div class="step">
+                <h4>2. إعادة تحميل المنتج عند الإضافة للعربة</h4>
+                <p>تعديل دالة <code>addToCart()</code> لإعادة تحميل أحدث بيانات المنتج من التخزين المحلي قبل إضافته للعربة</p>
+            </div>
+            <div class="step">
+                <h4>3. تحديث شامل لنقطة البيع</h4>
+                <p>تحديث جميع عناصر نقطة البيع عند تعديل المنتج: البحث، العربة، العرض الأفقي</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 خطوات الاختبار:</h3>
+            
+            <div class="step">
+                <h4>الخطوة 1: التحضير</h4>
+                <p>1. افتح Developer Tools (F12) → Console</p>
+                <p>2. افتح نقطة البيع (POS) واتركها مفتوحة</p>
+                <p>3. ابحث عن منتج موجود (مثل "t-shirt") وأضفه للعربة</p>
+                <p class="warning">لاحظ السعر المعروض في العربة</p>
+            </div>
+
+            <div class="step">
+                <h4>الخطوة 2: تعديل السعر</h4>
+                <p>1. اذهب إلى صفحة المنتجات</p>
+                <p>2. ابحث عن نفس المنتج وعدّل سعره (مثلاً من $30 إلى $35)</p>
+                <p>3. احفظ التعديل</p>
+                <p class="info">راقب رسائل Console للتأكد من التحديث</p>
+            </div>
+
+            <div class="step">
+                <h4>الخطوة 3: التحقق من التحديث</h4>
+                <p>1. ارجع إلى نقطة البيع</p>
+                <p>2. تحقق من أن السعر في العربة تم تحديثه</p>
+                <p>3. ابحث عن نفس المنتج مرة أخرى وأضفه للعربة</p>
+                <p class="success">يجب أن يظهر السعر الجديد ($35) وليس القديم ($30)</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 رسائل Console المتوقعة:</h3>
+            <div class="console-output">🔄 تم حفظ المنتج، محاولة تحديث POS...
+🔄 محاولة تحديث نقطة البيع...
+✅ نقطة البيع نشط، يتم التحديث...
+📦 تم تحميل X منتج
+🔄 تحديث المنتجات في العربة...
+✅ تم تحديث منتج في العربة: t-shirt
+✅ تم تحديث جميع المنتجات في العربة
+✅ تم تحديث نقطة البيع بنجاح</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 اختبار إضافي - إضافة منتج جديد:</h3>
+            <div class="step">
+                <h4>1. أضف منتج جديد</h4>
+                <p>أضف منتج جديد بسعر $50 في صفحة المنتجات</p>
+            </div>
+            <div class="step">
+                <h4>2. أضفه للعربة</h4>
+                <p>ارجع إلى نقطة البيع وابحث عن المنتج الجديد وأضفه للعربة</p>
+                <p class="success">يجب أن يظهر بالسعر $50</p>
+            </div>
+            <div class="step">
+                <h4>3. عدّل السعر</h4>
+                <p>عدّل سعر المنتج إلى $60 في صفحة المنتجات</p>
+            </div>
+            <div class="step">
+                <h4>4. تحقق من التحديث</h4>
+                <p>ارجع إلى نقطة البيع وتحقق من أن السعر في العربة أصبح $60</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>✅ النتيجة المتوقعة:</h3>
+            <div class="success">
+                🎉 يجب أن تظهر الأسعار المحدثة فوراً في نقطة البيع دون الحاجة لإعادة تحميل الصفحة!
+            </div>
+            <p>إذا لم يعمل الإصلاح بعد هذا الاختبار، فالمشكلة قد تكون في مكان آخر ويحتاج فحص أعمق.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🚨 إذا لم يعمل:</h3>
+            <p>1. تحقق من رسائل Console وأرسلها لي</p>
+            <p>2. تأكد من أن نقطة البيع مفتوح عند التعديل</p>
+            <p>3. جرب إعادة تحميل الصفحة مرة واحدة</p>
+            <p>4. تحقق من أن البيانات محفوظة في localStorage</p>
+        </div>
+    </div>
+</body>
+</html>

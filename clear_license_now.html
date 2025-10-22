@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مسح بيانات التفعيل</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container { 
+            background: white; 
+            color: #333;
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        button { 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover { 
+            background: #c82333; 
+            transform: translateY(-2px);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ مسح بيانات التفعيل</h1>
+        <p>هذا سيمسح جميع بيانات التفعيل المحفوظة</p>
+        
+        <button onclick="clearAllLicenseData()">مسح جميع بيانات التفعيل</button>
+        
+        <div id="result" class="result info" style="display: none;"></div>
+    </div>
+
+    <script>
+        function clearAllLicenseData() {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML = 'جاري المسح...';
+            result.className = 'result info';
+            
+            // مفاتيح التفعيل المعروفة
+            const licenseKeys = [
+                'license_state',
+                'catch_pos_license', 
+                'lastWarningTime'
+            ];
+            
+            let cleared = 0;
+            
+            // مسح localStorage
+            licenseKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                    console.log('✅ مسح localStorage: ' + key);
+                }
+            });
+            
+            // مسح sessionStorage  
+            licenseKeys.forEach(key => {
+                if (sessionStorage.getItem(key)) {
+                    sessionStorage.removeItem(key);
+                    cleared++;
+                    console.log('✅ مسح sessionStorage: ' + key);
+                }
+            });
+            
+            // مسح IndexedDB
+            if ('indexedDB' in window) {
+                try {
+                    indexedDB.deleteDatabase('catch_pos_license');
+                    cleared++;
+                    console.log('✅ مسح IndexedDB: catch_pos_license');
+                } catch (e) {
+                    console.log('ℹ️ IndexedDB غير متوفر أو محذوف مسبقاً');
+                }
+            }
+            
+            // مسح أي مفاتيح أخرى قد تكون موجودة
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => {
+                if (key.toLowerCase().includes('license') || 
+                    key.toLowerCase().includes('activation') ||
+                    key.toLowerCase().includes('catch_pos')) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                    console.log('✅ مسح مفتاح إضافي: ' + key);
+                }
+            });
+            
+            result.innerHTML = `✅ تم مسح ${cleared} عنصر بنجاح!<br><br>النظام جاهز لإعادة التفعيل من جديد`;
+            result.className = 'result success';
+            
+            console.log(`🎉 تم الانتهاء! مسح ${cleared} عنصر من بيانات التفعيل`);
+            
+            // إعادة توجيه للنظام الرئيسي بعد 3 ثواني
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 3000);
+        }
+        
+        // تشغيل المسح تلقائياً عند تحميل الصفحة
+        window.onload = function() {
+            setTimeout(() => {
+                clearAllLicenseData();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
+

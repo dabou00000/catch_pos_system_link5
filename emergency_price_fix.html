@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حل طوارئ - تحديث السعر في العربة</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #fff;
+        }
+        .step h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 حل طوارئ - تحديث السعر في العربة</h1>
+        <p>تم تطبيق حلول متعددة لحل مشكلة السعر القديم في العربة</p>
+
+        <div class="solution-box">
+            <h2>🔍 المشكلة المستمرة:</h2>
+            <div class="warning">
+                <strong>المشكلة:</strong> رغم جميع المحاولات، السعر لا يزال يظهر $30 في العربة بدلاً من $32 في جدول المنتجات.
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🛠️ الحلول المطبقة:</h2>
+            
+            <div class="step">
+                <h3>1. إنشاء نسخة جديدة تماماً من المنتج:</h3>
+                <div class="code-block">
+// بدلاً من استخدام spread operator (...)
+const freshProduct = {
+    id: updatedProduct.id,
+    name: updatedProduct.name,
+    priceUSD: updatedProduct.priceUSD,
+    prices: JSON.parse(JSON.stringify(updatedProduct.prices)), // نسخة عميقة
+    // ... جميع البيانات الأخرى
+};
+cart.push(freshProduct);
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>2. تحديث المنتج الموجود في العربة:</h3>
+                <div class="code-block">
+// تحديث بيانات المنتج الموجود بالسعر الجديد
+existingItem.priceUSD = updatedProduct.priceUSD;
+existingItem.priceLBP = updatedProduct.priceLBP;
+existingItem.prices = JSON.parse(JSON.stringify(updatedProduct.prices));
+// ... تحديث جميع البيانات
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>3. دالة إجبارية لتحديث العربة:</h3>
+                <div class="code-block">
+function forceUpdateCartPrices() {
+    // تحديث جميع المنتجات في العربة بالأسعار الجديدة
+    // إزالة الأسعار المخصصة القديمة
+    // إعادة حساب المجموع
+}
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🧪 اختبار الحلول:</h2>
+            
+            <div class="step">
+                <h3>الطريقة الأولى: إضافة منتج جديد</h3>
+                <p>1. امسح العربة بالكامل</p>
+                <p>2. أضف المنتج "t-shirt square (black)" مرة أخرى</p>
+                <p>3. راقب Console للرسائل:</p>
+                <div class="code-block">
+🔄 إضافة منتج جديد تماماً: t-shirt square (black) بسعر $32
+                </div>
+                <p class="success">يجب أن يظهر السعر $32.00</p>
+            </div>
+            
+            <div class="step">
+                <h3>الطريقة الثانية: تحديث إجباري</h3>
+                <p>1. افتح Developer Tools (F12) → Console</p>
+                <p>2. انسخ والصق هذا الكود:</p>
+                <div class="code-block">
+forceUpdateCartPrices();
+                </div>
+                <p>3. اضغط Enter</p>
+                <p class="success">يجب أن يتم تحديث جميع الأسعار في العربة</p>
+            </div>
+            
+            <div class="step">
+                <h3>الطريقة الثالثة: حل يدوي</h3>
+                <div class="code-block">
+// حل يدوي في Console
+let product = getCurrentProducts().find(p => p.name.includes('t-shirt'));
+if (product) {
+    console.log('السعر الحالي:', product.priceUSD);
+    let cartItem = cart.find(item => item.id === product.id);
+    if (cartItem) {
+        cartItem.priceUSD = product.priceUSD;
+        cartItem.priceLBP = product.priceLBP;
+        cartItem.prices = JSON.parse(JSON.stringify(product.prices));
+        updateCart();
+        console.log('تم تحديث السعر يدوياً');
+    }
+}
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📊 رسائل Console المتوقعة:</h2>
+            
+            <div class="step">
+                <h3>عند إضافة منتج جديد:</h3>
+                <div class="code-block">
+🔍 فحص تحديث السعر: السعر القديم=30, السعر الجديد=32
+🔍 تشخيص السعر المفصل:
+  - product.priceUSD (القديم): 30
+  - updatedProduct.priceUSD (الجديد): 32
+🔄 إضافة منتج جديد تماماً: t-shirt square (black) بسعر $32
+تم إضافة منتج جديد للعربة: t-shirt square (black)
+💰 استخدام السعر العادي للمنتج t-shirt: $32.00
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>عند استخدام forceUpdateCartPrices():</h3>
+                <div class="code-block">
+🚨 إجبار تحديث جميع الأسعار في العربة...
+💰 تحديث إجباري: t-shirt square (black) من $30 إلى $32
+🗑️ تم إزالة السعر المخصص القديم: $30
+✅ تم تحديث 1 منتج في العربة
+🎉 تم تحديث العربة بنجاح!
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔧 إذا لم تعمل أي من الطرق:</h2>
+            
+            <div class="step">
+                <h3>تشخيص شامل:</h3>
+                <div class="code-block">
+// تشخيص شامل في Console
+console.log('=== تشخيص شامل ===');
+console.log('المنتجات الحالية:', getCurrentProducts());
+console.log('العربة:', cart);
+console.log('Catalog Version:', productsCatalogVersion);
+
+let product = getCurrentProducts().find(p => p.name.includes('t-shirt'));
+if (product) {
+    console.log('منتج t-shirt في قاعدة البيانات:', product);
+    console.log('سعره:', product.priceUSD);
+}
+
+let cartProduct = cart.find(item => item.name.includes('t-shirt'));
+if (cartProduct) {
+    console.log('منتج t-shirt في العربة:', cartProduct);
+    console.log('سعره في العربة:', cartProduct.priceUSD);
+    console.log('السعر المخصص:', cartProduct.customPriceUSD);
+}
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>حل نهائي:</h3>
+                <div class="code-block">
+// حل نهائي - مسح العربة وإعادة إضافة المنتجات
+cart.length = 0; // مسح العربة
+products = getCurrentProducts(); // تحديث المنتجات
+updateCart(); // تحديث العرض
+console.log('تم مسح العربة وتحديث البيانات');
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>✅ النتيجة المتوقعة:</h2>
+            <div class="success">
+                🎉 <strong>أحد هذه الطرق يجب أن تعمل:</strong><br>
+                • إضافة منتج جديد → نسخة جديدة تماماً<br>
+                • forceUpdateCartPrices() → تحديث إجباري<br>
+                • الحل اليدوي → تحديث مباشر<br>
+                • المسح والإعادة → بداية جديدة
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير النتيجة:</h2>
+            <p>بعد تجربة جميع الطرق، أخبرني:</p>
+            <ul>
+                <li>أي طريقة عملت معك؟</li>
+                <li>ما هي رسائل Console التي ظهرت؟</li>
+                <li>هل تم تحديث السعر من $30 إلى $32؟</li>
+                <li>هل لا تزال المشكلة موجودة؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 جرب forceUpdateCartPrices() أولاً - هذا الحل يجب أن يعمل!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تم إصلاح أخطاء تعديل السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #fff;
+        }
+        .step h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ تم إصلاح أخطاء تعديل السعر</h1>
+        <p>تم حل مشكلة أخطاء stepUp/stepDown في أزرار تعديل السعر</p>
+
+        <div class="solution-box">
+            <h2>🔍 المشكلة التي تم حلها:</h2>
+            <div class="warning">
+                <strong>الأخطاء السابقة:</strong><br>
+                • Uncaught InvalidStateError: Failed to execute 'stepUp' on 'HTMLInputElement'<br>
+                • Uncaught InvalidStateError: Failed to execute 'stepDown' on 'HTMLInputElement'<br>
+                • This form element is not steppable
+            </div>
+            
+            <div class="info">
+                <strong>السبب:</strong> حقل الإدخال من نوع "text" وليس "number"، لذلك لا يدعم دوال stepUp() و stepDown().
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🛠️ الحل المطبق:</h2>
+            <div class="step">
+                <h3>1. إنشاء دوال مخصصة</h3>
+                <p>تم إنشاء دوال مخصصة بدلاً من استخدام stepUp/stepDown:</p>
+                <div class="code-block">
+// دالة لزيادة السعر
+function increasePrice(index) {
+    const el = document.getElementById(`customPrice_${index}`);
+    if (!el) return;
+    
+    const currentValue = parseFloat(el.value) || 0;
+    const newValue = currentValue + 1;
+    el.value = newValue;
+    autosizePriceInput(el);
+    updateItemCustomPrice(index, el.value);
+}
+
+// دالة لتقليل السعر
+function decreasePrice(index) {
+    const el = document.getElementById(`customPrice_${index}`);
+    if (!el) return;
+    
+    const currentValue = parseFloat(el.value) || 0;
+    const newValue = Math.max(0, currentValue - 1);
+    el.value = newValue;
+    autosizePriceInput(el);
+    updateItemCustomPrice(index, el.value);
+}
+                </div>
+            </div>
+            
+            <div class="step">
+                <h3>2. تحديث الأزرار</h3>
+                <p>تم تحديث أزرار زيادة/تقليل السعر لتستخدم الدوال الجديدة:</p>
+                <div class="code-block">
+<!-- قبل الإصلاح -->
+onclick="el.stepUp(); autosizePriceInput(el); updateItemCustomPrice(${index}, el.value)"
+
+<!-- بعد الإصلاح -->
+onclick="increasePrice(${index})"
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🧪 كيفية اختبار الإصلاح:</h2>
+            
+            <div class="step">
+                <h3>الخطوة 1: إضافة منتج للعربة</h3>
+                <p>1. اذهب إلى نقطة البيع</p>
+                <p>2. أضف منتج للعربة</p>
+                <p>3. انقر على زر "تعديل السعر" بجانب المنتج</p>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 2: اختبار أزرار الزيادة/التقليل</h3>
+                <p>1. انقر على زر "▲" لزيادة السعر</p>
+                <p>2. انقر على زر "▼" لتقليل السعر</p>
+                <p>3. تأكد من عدم ظهور أخطاء في Console</p>
+            </div>
+            
+            <div class="step">
+                <h3>الخطوة 3: اختبار تعديل السعر</h3>
+                <p>1. أدخل سعر جديد في الحقل</p>
+                <p>2. اضغط Enter أو انقر خارج الحقل</p>
+                <p>3. تحقق من تحديث السعر في العربة</p>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📊 رسائل Console المتوقعة:</h2>
+            <div class="code-block">
+🔄 تحديث السعر المخصص للمنتج t-shirt: من $30 إلى $31
+✅ تم حفظ السعر المخصص: $31
+🔄 تم تحديث العربة بعد تعديل السعر
+💰 استخدام السعر المخصص للمنتج t-shirt: $31 (العرض: $31.00)
+            </div>
+            
+            <div class="success">
+                ✅ لا يجب أن تظهر أخطاء stepUp/stepDown بعد الآن!
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔧 ميزات الدوال الجديدة:</h2>
+            
+            <div class="step">
+                <h3>دالة increasePrice:</h3>
+                <ul>
+                    <li>تزيد السعر بوحدة واحدة</li>
+                    <li>تحديث عرض الحقل تلقائياً</li>
+                    <li>حفظ السعر المخصص</li>
+                    <li>تحديث العربة فوراً</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <h3>دالة decreasePrice:</h3>
+                <ul>
+                    <li>تقلل السعر بوحدة واحدة</li>
+                    <li>تمنع السعر من أن يكون أقل من 0</li>
+                    <li>تحديث عرض الحقل تلقائياً</li>
+                    <li>حفظ السعر المخصص</li>
+                    <li>تحديث العربة فوراً</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>✅ النتيجة المتوقعة:</h2>
+            <div class="success">
+                🎉 يجب أن يعمل تعديل السعر الآن بدون أي أخطاء!<br>
+                • أزرار الزيادة/التقليل تعمل بشكل صحيح<br>
+                • لا توجد أخطاء في Console<br>
+                • السعر يتحدث فوراً في العربة<br>
+                • رسائل التشخيص واضحة
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير النتيجة:</h2>
+            <p>بعد اختبار الإصلاح، أخبرني:</p>
+            <ul>
+                <li>هل اختفت أخطاء stepUp/stepDown من Console؟</li>
+                <li>هل تعمل أزرار الزيادة/التقليل بشكل صحيح؟</li>
+                <li>هل يتم تحديث السعر في العربة فوراً؟</li>
+                <li>هل تظهر رسائل التشخيص في Console؟</li>
+                <li>هل يعمل تعديل السعر بشكل كامل؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 الآن يجب أن يعمل تعديل السعر بدون أي مشاكل!
+            </div>
+        </div>
+    </div>
+</body>
+</html>

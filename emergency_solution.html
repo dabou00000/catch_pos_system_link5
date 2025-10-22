@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حل طوارئ لمشكلة تحديث السعر</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .solution-box {
+            background: rgba(255,255,255,0.2);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 5px solid #fff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #fff;
+        }
+        .step h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+        .highlight {
+            background: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+        .success {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .button {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .button:hover {
+            background: #218838;
+        }
+        .warning {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 حل طوارئ لمشكلة تحديث السعر</h1>
+        <p>تم إضافة حلول متعددة لحل مشكلة تحديث السعر في نقطة البيع</p>
+
+        <div class="solution-box">
+            <h2>🎯 الحل الأول: زر تحديث يدوي</h2>
+            <div class="step">
+                <h3>1. استخدم الزر الجديد</h3>
+                <p>تم إضافة زر "تحديث الأسعار" في نقطة البيع بجانب زر "مسح العربة"</p>
+                <div class="highlight">
+                    💡 بعد تعديل سعر منتج، انقر على زر "تحديث الأسعار" في نقطة البيع
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔧 الحل الثاني: تحديث يدوي من Console</h2>
+            <div class="step">
+                <h3>1. افتح Developer Tools</h3>
+                <p>اضغط F12 أو انقر بزر الماوس الأيمن → "فحص العنصر"</p>
+            </div>
+            
+            <div class="step">
+                <h3>2. اذهب إلى Console</h3>
+                <p>انقر على تبويب "Console" في Developer Tools</p>
+            </div>
+            
+            <div class="step">
+                <h3>3. انسخ والصق هذا الكود</h3>
+                <div class="code-block">
+forceRefreshPOS();
+                </div>
+                <p>ثم اضغط Enter</p>
+            </div>
+            
+            <div class="success">
+                ✅ هذا سيحدث جميع الأسعار في نقطة البيع فوراً!
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>🔍 الحل الثالث: تشخيص المشكلة</h2>
+            <div class="step">
+                <h3>إذا لم تعمل الحلول أعلاه:</h3>
+                <p>انسخ والصق هذا الكود في Console للتشخيص:</p>
+                <div class="code-block">
+// تشخيص شامل للمشكلة
+console.log('🔍 بدء التشخيص...');
+
+// 1. فحص localStorage
+let storedProducts = JSON.parse(localStorage.getItem('products') || '[]');
+console.log('📦 المنتجات في localStorage:', storedProducts.length);
+
+// 2. فحص متغير products
+console.log('📦 المنتجات في المتغير:', products ? products.length : 'غير موجود');
+
+// 3. فحص العربة
+console.log('🛒 المنتجات في العربة:', cart ? cart.length : 'غير موجود');
+
+// 4. فحص منتج معين
+let testProduct = storedProducts.find(p => p.name.includes('t-shirt'));
+if (testProduct) {
+    console.log('🧪 منتج الاختبار:', testProduct.name);
+    console.log('   السعر الحالي:', testProduct.priceUSD);
+    console.log('   الأسعار المتعددة:', testProduct.prices);
+}
+
+// 5. فحص المنتج في العربة
+if (cart && cart.length > 0) {
+    let cartProduct = cart.find(item => item.name.includes('t-shirt'));
+    if (cartProduct) {
+        console.log('🛒 المنتج في العربة:', cartProduct.name);
+        console.log('   السعر في العربة:', cartProduct.priceUSD);
+    }
+}
+
+console.log('✅ انتهى التشخيص');
+                </div>
+            </div>
+        </div>
+
+        <div class="solution-box">
+            <h2>⚡ الحل الرابع: تحديث مباشر للسعر</h2>
+            <div class="step">
+                <h3>إذا كنت تريد تحديث سعر منتج معين مباشرة:</h3>
+                <div class="code-block">
+// تحديث سعر منتج معين مباشرة
+function updateProductPrice(productName, newPrice) {
+    // تحديث في localStorage
+    let products = JSON.parse(localStorage.getItem('products') || '[]');
+    let product = products.find(p => p.name.includes(productName));
+    if (product) {
+        product.priceUSD = newPrice;
+        product.priceLBP = Math.round(newPrice * 90000); // افتراض سعر صرف 90000
+        localStorage.setItem('products', JSON.stringify(products));
+        console.log(`✅ تم تحديث سعر ${product.name} إلى $${newPrice}`);
+    }
+    
+    // تحديث في العربة
+    if (cart && cart.length > 0) {
+        let cartItem = cart.find(item => item.name.includes(productName));
+        if (cartItem) {
+            cartItem.priceUSD = newPrice;
+            cartItem.priceLBP = Math.round(newPrice * 90000);
+            console.log(`✅ تم تحديث سعر المنتج في العربة`);
+        }
+    }
+    
+    // إعادة عرض العربة
+    if (typeof updateCart === 'function') {
+        updateCart();
+    }
+}
+
+// مثال: تحديث سعر t-shirt إلى $35
+// updateProductPrice('t-shirt', 35);
+                </div>
+            </div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ تحذير مهم</h3>
+            <p>هذه حلول مؤقتة. بعد استخدامها، يجب أن نجد السبب الجذري للمشكلة ونصلحه في الكود الأساسي.</p>
+        </div>
+
+        <div class="solution-box">
+            <h2>📞 تقرير المشكلة</h2>
+            <p>بعد تجربة الحلول أعلاه، أرسل لي:</p>
+            <ul>
+                <li>أي حل عمل معك؟</li>
+                <li>ما هي رسائل Console التي ظهرت؟</li>
+                <li>هل توجد أخطاء؟</li>
+                <li>هل المشكلة لا تزال موجودة؟</li>
+            </ul>
+            
+            <div class="highlight">
+                💡 الحل الأسرع: استخدم زر "تحديث الأسعار" الجديد في نقطة البيع!
+            </div>
+        </div>
+    </div>
+</body>
+</html>
