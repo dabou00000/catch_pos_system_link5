@@ -140,3 +140,4 @@ window.location.reload(true);
 ```javascript
 fixAllOldInvoices();
 ```
+

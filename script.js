@@ -814,42 +814,55 @@ function renderProfitReports() {
                     <div class="profit-summary-value">0</div>
                 </div>
             `;
-            // تطبيق الترجمات على العناوين
-            const titles = sumEl.querySelectorAll('.profit-summary-title[data-i18n]');
-            titles.forEach(title => {
-                const key = title.getAttribute('data-i18n');
-                title.textContent = getText(key);
-            });
         }
-        return; // إيقاف المعالجة عند عدم وجود مبيعات
+        return;
     }
-    // === منطق الحساب الجديد المبني على البيانات الفعلية ===
     
-    // دالة لحساب السعر النهائي للعنصر
+    // === دالة موحدة لحساب السعر النهائي مع التحويل الصحيح للعملة ===
     function getItemFinalPrice(item) {
+        // أولوية للأسعار المحدثة
         if (item.finalPriceUSD !== null && item.finalPriceUSD !== undefined) {
             return parseFloat(item.finalPriceUSD) || 0;
         }
-        return parseFloat(item.priceUSD) || 0;
-    }
-    
-    // دالة لحساب تكلفة العنصر
-    function getItemCost(item) {
-        const product = products.find(p => p.id === item.id);
-        const itemCost = parseFloat(item.costUSD) || 0;
-        const productCost = parseFloat(product?.costUSD) || 0;
         
-        // استخدام تكلفة العنصر أولاً، ثم تكلفة المنتج
-        return itemCost > 0 ? itemCost : productCost;
+        // استخدام السعر الأساسي
+        if (item.priceUSD !== null && item.priceUSD !== undefined) {
+            return parseFloat(item.priceUSD) || 0;
+        }
+        
+        // البحث عن المنتج في قاعدة البيانات
+        const product = products.find(p => p.id === item.id);
+        if (product && product.priceUSD) {
+            return parseFloat(product.priceUSD) || 0;
+        }
+        
+        return 0;
     }
     
-    // متغيرات الحساب الإجمالي
+    // === دالة موحدة لحساب تكلفة العنصر مع التحويل الصحيح للعملة ===
+    function getItemCost(item) {
+        // أولوية لتكلفة العنصر المحددة
+        if (item.costUSD !== null && item.costUSD !== undefined && item.costUSD > 0) {
+            return parseFloat(item.costUSD);
+        }
+        
+        // البحث عن المنتج في قاعدة البيانات
+        const product = products.find(p => p.id === item.id);
+        if (product && product.costUSD) {
+            return parseFloat(product.costUSD) || 0;
+        }
+        
+        return 0;
+    }
+    
+    // === حساب المجاميع الموحد ===
+    // متغيرات الحساب الإجمالي - سيتم استخدامها لكل من الملخص والجدول
     let totalGrossSales = 0;
     let totalCostOfGoods = 0;
     let totalInvoices = 0;
     let totalRefunds = 0;
     
-    // هيكل البيانات للأيام - سيكون فارغاً حتى نحصل على بيانات فعلية
+    // هيكل البيانات للأيام - سيتم استخدامه للجدول
     const dailyData = {};
     
     console.log(`🔄 بدء معالجة ${filteredSales.length} مبيع صالح...`);
@@ -966,10 +979,10 @@ function renderProfitReports() {
         totalRefunds: totalRefunds,
         daysWithSales: Object.keys(dailyData).length
     });
+    
     // عرض الملخص باستخدام البيانات المحسوبة بدقة
     const sumEl = document.getElementById('profitSummary');
     if (sumEl) {
-        const netClass = totalNetProfit >= 0 ? 'positive' : 'negative';
         sumEl.innerHTML = `
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="gross-sales">Gross Sales</div>
@@ -981,7 +994,7 @@ function renderProfitReports() {
             </div>
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="net-profit">Net Profit</div>
-                <div class="profit-summary-value ${netClass}">${formatCurrency(totalNetProfit,'USD')}</div>
+                <div class="profit-summary-value">${formatCurrency(totalNetProfit,'USD')}</div>
             </div>
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="invoices">Invoices</div>
@@ -1000,23 +1013,17 @@ function renderProfitReports() {
             title.textContent = getText(key);
         });
     }
-    // === عرض الجدول بناءً على البيانات الصحيحة ===
     
-    // الحصول على الأيام التي تحتوي على بيانات فعلية فقط
-    const validDays = Object.values(dailyData).filter(day => {
-        // اليوم صالح فقط إذا كان لديه مبيعات فعلية أو إيرادات
-        return day.invoiceCount > 0 || day.grossSales > 0 || day.refundCount > 0;
-    });
+    // === عرض الجدول ===
     
-    // ترتيب الأيام من الأحدث للأقدم
-    validDays.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    console.log(`📋 عرض ${validDays.length} يوم مع بيانات فعلية`);
-    
-    // تطبيق التنقل بالصفحات
+    // تحويل البيانات إلى مصفوفة وترتيبها حسب التاريخ
+    const validDays = Object.values(dailyData).sort((a, b) => new Date(b.date) - new Date(a.date));
     const totalDays = validDays.length;
-    const totalPages = Math.max(1, Math.ceil(totalDays / pageSize));
-    let currentPage = parseInt(sessionStorage.getItem('profit.currentPage') || '1') || 1;
+    
+    // تطبيق الترقيم
+    const currentPage = parseInt(sessionStorage.getItem('profit.currentPage')||'1')||1;
+    const totalPages = Math.ceil(totalDays / pageSize);
+    sessionStorage.setItem('profit.currentPage', String(Math.max(1, Math.min(totalPages, currentPage))));
     currentPage = Math.max(1, Math.min(totalPages, currentPage));
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;

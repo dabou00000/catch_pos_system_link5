@@ -130,3 +130,4 @@ saveToStorage('sales', realSales);
 ```javascript
 removeFakeInvoices();
 ```
+

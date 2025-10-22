@@ -111,3 +111,4 @@ window.location.reload(true);
 ```javascript
 forceRefreshSalesTable();
 ```
+

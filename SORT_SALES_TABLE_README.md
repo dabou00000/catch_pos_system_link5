@@ -139,3 +139,4 @@ saveToStorage('sales', sortedSales);
 ```javascript
 sortSalesByTime();
 ```
+

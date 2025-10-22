@@ -157,3 +157,4 @@ saveToStorage('sales', realSales);
 ```javascript
 checkSuspiciousInvoices();
 ```
+

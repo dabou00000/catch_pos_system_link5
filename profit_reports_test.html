@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار إصلاح تقارير الأرباح</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        
+        .test-section h2 {
+            color: #28a745;
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        
+        .test-steps {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .test-steps ol {
+            margin: 0;
+            padding-right: 20px;
+        }
+        
+        .test-steps li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .expected-results {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .expected-results h3 {
+            color: #28a745;
+            margin-top: 0;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .fix-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .fix-summary h2 {
+            margin-top: 0;
+            color: white;
+        }
+        
+        .fix-summary ul {
+            margin: 15px 0;
+        }
+        
+        .fix-summary li {
+            margin: 8px 0;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 اختبار إصلاح تقارير الأرباح</h1>
+            <p>توحيد مصدر البيانات وإصلاح مشاكل التجميع</p>
+        </div>
+        
+        <div class="content">
+            <div class="fix-summary">
+                <h2>✅ الإصلاحات المطبقة</h2>
+                <ul>
+                    <li><strong>توحيد مصدر البيانات:</strong> الملخص والجدول يستخدمان نفس البيانات</li>
+                    <li><strong>معادلات صريحة:</strong> sales_total = SUM(qty * price_after_discount)</li>
+                    <li><strong>عملة واحدة:</strong> تحويل USD/LBP قبل التجميع</li>
+                    <li><strong>معالجة الحالات:</strong> استبعاد الفواتير الملغاة والمرتجعات</li>
+                    <li><strong>لا اعتماد على cached values:</strong> حساب مباشر من البيانات</li>
+                </ul>
+            </div>
+            
+            <div class="test-section">
+                <h2>🧪 خطوات الاختبار</h2>
+                <div class="test-steps">
+                    <ol>
+                        <li><strong>افتح التطبيق</strong> وانتقل إلى قسم التقارير</li>
+                        <li><strong>اختر "تقارير الأرباح"</strong> من قائمة التقارير</li>
+                        <li><strong>تأكد من اختيار "اليوم"</strong> في فلتر التاريخ</li>
+                        <li><strong>اضغط "تطبيق"</strong> لعرض التقرير</li>
+                        <li><strong>تحقق من الأرقام:</strong>
+                            <ul>
+                                <li>عدد الفواتير: 8 (صحيح)</li>
+                                <li>إجمالي المبيعات: يجب أن يكون مجموع صفوف الجدول</li>
+                                <li>إجمالي الكلفة: يجب أن يكون مجموع صفوف الجدول</li>
+                                <li>صافي الربح: المبيعات - الكلفة</li>
+                            </ul>
+                        </li>
+                        <li><strong>تحقق من الجدول:</strong> يجب أن تظهر صفوف متعددة إذا كان هناك مبيعات في أيام مختلفة</li>
+                        <li><strong>اختبر التصدير:</strong> اضغط PDF أو CSV وتأكد من تطابق الأرقام</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="expected-results">
+                <h3>📊 النتائج المتوقعة</h3>
+                <div class="code-block">
+المجاميع العلوية = مجموع صفوف الجدول
+profit = sales_total - cost_total (تماماً)
+أرقام PDF/CSV = أرقام الواجهة
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🔍 التحقق من الإصلاح</h2>
+                <div class="test-steps">
+                    <ol>
+                        <li><strong>افتح Developer Tools</strong> (F12) وانتقل إلى Console</li>
+                        <li><strong>شغل التقرير</strong> وراقب الرسائل في Console</li>
+                        <li><strong>ابحث عن:</strong>
+                            <ul>
+                                <li>"📊 ملخص التقرير النهائي" - يجب أن تظهر الأرقام الصحيحة</li>
+                                <li>"✅ تم معالجة بيع" - يجب أن تظهر معالجة 8 فواتير</li>
+                                <li>"📋 عرض X يوم مع بيانات فعلية" - يجب أن تظهر الأيام الصحيحة</li>
+                            </ul>
+                        </li>
+                        <li><strong>تحقق من عدم وجود أخطاء</strong> في Console</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="success-box">
+                <h3>✅ مؤشرات النجاح</h3>
+                <ul>
+                    <li>عدد الفواتير صحيح (8)</li>
+                    <li>المجاميع العلوية = مجموع صفوف الجدول</li>
+                    <li>profit = sales_total - cost_total</li>
+                    <li>أرقام PDF/CSV تطابق الواجهة</li>
+                    <li>لا توجد أخطاء في Console</li>
+                </ul>
+            </div>
+            
+            <div class="warning-box">
+                <h3>⚠️ ملاحظات مهمة</h3>
+                <ul>
+                    <li>تأكد من وجود 8 فواتير في اليوم المحدد</li>
+                    <li>إذا لم تظهر النتائج المتوقعة، تحقق من Console للأخطاء</li>
+                    <li>قد تحتاج إلى تحديث الصفحة بعد التغييرات</li>
+                </ul>
+            </div>
+            
+            <div class="test-section">
+                <h2>🔄 اختبارات إضافية</h2>
+                <div class="test-steps">
+                    <ol>
+                        <li><strong>اختبر فلاتر مختلفة:</strong> نقدي، دين، دفع جزئي</li>
+                        <li><strong>اختبر فترات مختلفة:</strong> هذا الأسبوع، هذا الشهر</li>
+                        <li><strong>اختبر الترقيم:</strong> انتقل بين الصفحات</li>
+                        <li><strong>اختبر التصدير:</strong> PDF و CSV</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
