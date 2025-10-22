@@ -234,7 +234,7 @@ function getExpensesData() {
             
             return {
                 id: tr.id || Date.now() + Math.random(),
-                date: tr.timestamp || tr.date || getLocalISOString(),
+                date: tr.timestamp || tr.date || new Date().toISOString(),
                 category: tr.category || 'عام',
                 description: tr.description || tr.note || '',
                 originalAmount: amount,
@@ -371,7 +371,7 @@ function recordProductSupplyExpense(productName, quantity, unitCost, currency = 
         
         // إنشاء معاملة النفقة
         const expenseTransaction = {
-            timestamp: getLocalISOString(),
+            timestamp: new Date().toISOString(),
             type: 'expense',
             amount: totalCost,
             currency: currency,
@@ -388,7 +388,7 @@ function recordProductSupplyExpense(productName, quantity, unitCost, currency = 
         
         // إضافة المعاملة
         cashDrawer.transactions.push(expenseTransaction);
-        cashDrawer.lastUpdate = getLocalISOString();
+        cashDrawer.lastUpdate = new Date().toISOString();
         
         // حفظ البيانات
         saveToStorage('cashDrawer', cashDrawer);
@@ -589,13 +589,18 @@ function getDateRange(preset) {
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23,59,59,999);
     switch(preset){
         case 'today': {
-            // استخدام الدوال المحلية الجديدة للحصول على حدود اليوم الدقيقة
-            const startToday = getStartOfDayLocal();
-            const endToday = getEndOfDayLocal();
+            // استخدام الوقت المحلي الحالي تماماً دون تحويل UTC
+            const now = new Date();
             
-            console.log(`📅 حساب "اليوم" - بداية: ${startToday.toLocaleDateString('ar-LB')} ${startToday.getHours()}:${String(startToday.getMinutes()).padStart(2, '0')}:${String(startToday.getSeconds()).padStart(2, '0')}`);
-            console.log(`📅 حساب "اليوم" - نهاية: ${endToday.toLocaleDateString('ar-LB')} ${endToday.getHours()}:${String(endToday.getMinutes()).padStart(2, '0')}:${String(endToday.getSeconds()).padStart(2, '0')}`);
-            console.log(`📅 اليوم الفعلي: ${startToday.getFullYear()}-${String(startToday.getMonth() + 1).padStart(2, '0')}-${String(startToday.getDate()).padStart(2, '0')}`);
+            // إنشاء بداية اليوم (00:00:00.000) باستخدام المنطقة الزمنية المحلية
+            const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            
+            // إنشاء نهاية اليوم (23:59:59.999) باستخدام المنطقة الزمنية المحلية
+            const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            
+            console.log(`📅 حساب "اليوم": ${now.toLocaleDateString()} (${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')})`);
+            console.log(`📅 نطاق اليوم: ${startToday.toLocaleDateString()} ${startToday.getHours()}:${String(startToday.getMinutes()).padStart(2, '0')} إلى ${endToday.toLocaleDateString()} ${endToday.getHours()}:${String(endToday.getMinutes()).padStart(2, '0')}`);
+            console.log(`📅 نطاق اليوم (ISO): من ${startToday.toISOString()} إلى ${endToday.toISOString()}`);
             
             return [startToday, endToday];
         }
@@ -814,9 +819,16 @@ function renderProfitReports() {
                     <div class="profit-summary-value">0</div>
                 </div>
             `;
+            // تطبيق الترجمات على العناوين
+            const titles = sumEl.querySelectorAll('.profit-summary-title[data-i18n]');
+            titles.forEach(title => {
+                const key = title.getAttribute('data-i18n');
+                title.textContent = getText(key);
+            });
         }
-        return;
+        return; // إيقاف المعالجة عند عدم وجود مبيعات
     }
+    // === منطق الحساب الجديد المبني على البيانات الفعلية ===
     
     // === دالة موحدة لحساب السعر النهائي مع التحويل الصحيح للعملة ===
     function getItemFinalPrice(item) {
@@ -855,14 +867,13 @@ function renderProfitReports() {
         return 0;
     }
     
-    // === حساب المجاميع الموحد ===
-    // متغيرات الحساب الإجمالي - سيتم استخدامها لكل من الملخص والجدول
+    // متغيرات الحساب الإجمالي - سيتم إعادة حسابها من الجدول
     let totalGrossSales = 0;
     let totalCostOfGoods = 0;
     let totalInvoices = 0;
     let totalRefunds = 0;
     
-    // هيكل البيانات للأيام - سيتم استخدامه للجدول
+    // هيكل البيانات للأيام - سيكون فارغاً حتى نحصل على بيانات فعلية
     const dailyData = {};
     
     console.log(`🔄 بدء معالجة ${filteredSales.length} مبيع صالح...`);
@@ -916,14 +927,17 @@ function renderProfitReports() {
                 const itemPrice = getItemFinalPrice(item);
                 const itemCost = getItemCost(item);
                 
-                if (itemPrice > 0 || itemCost > 0) {
-                    const totalPrice = itemPrice * quantity;
-                    const totalCost = itemCost * quantity;
-                    
-                    saleGross += totalPrice;
-                    saleCost += totalCost;
-                    hasValidItems = true;
-                }
+                // تطبيق المعادلات الصحيحة
+                // sales_total = SUM(line.qty * line.price_after_discount_tax_included)
+                // cost_total = SUM(line.qty * line.cost)
+                const totalPrice = itemPrice * quantity;
+                const totalCost = itemCost * quantity;
+                
+                saleGross += totalPrice;
+                saleCost += totalCost;
+                hasValidItems = true;
+                
+                console.log(`📊 عنصر: ${item.name || item.id}, كمية: ${quantity}, سعر: ${itemPrice.toFixed(2)}$, تكلفة: ${itemCost.toFixed(2)}$, إجمالي: ${totalPrice.toFixed(2)}$, تكلفة إجمالية: ${totalCost.toFixed(2)}$`);
             });
             
             // إذا كان هناك عناصر صالحة، أضف البيانات
@@ -966,23 +980,51 @@ function renderProfitReports() {
         }
     });
     
-    // === عرض النتائج النهائية ===
+    // === الحل الجذري: حساب المجاميع من نفس البيانات المعروضة في الجدول ===
+    
+    // الحصول على الأيام التي تحتوي على بيانات فعلية فقط (نفس منطق الجدول)
+    const validDays = Object.values(dailyData).filter(day => {
+        // اليوم صالح فقط إذا كان لديه مبيعات فعلية أو إيرادات
+        return day.invoiceCount > 0 || day.grossSales > 0 || day.refundCount > 0;
+    });
+    
+    // ترتيب الأيام من الأحدث للأقدم
+    validDays.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    console.log(`📋 عرض ${validDays.length} يوم مع بيانات فعلية`);
+    
+    // === حساب المجاميع من نفس البيانات المعروضة في الجدول ===
+    
+    // إعادة حساب المجاميع من صفوف الجدول الفعلية فقط
+    totalGrossSales = 0;
+    totalCostOfGoods = 0;
+    totalInvoices = 0;
+    totalRefunds = 0;
+    
+    // حساب المجاميع من نفس البيانات المعروضة في الجدول
+    validDays.forEach(day => {
+        totalGrossSales += day.grossSales;
+        totalCostOfGoods += day.costOfGoods;
+        totalInvoices += day.invoiceCount;
+        totalRefunds += day.refundCount;
+    });
     
     // حساب الربح الصافي الإجمالي
     const totalNetProfit = totalGrossSales - totalCostOfGoods;
     
-    console.log(`📊 ملخص التقرير النهائي:`, {
+    console.log(`📊 ملخص التقرير النهائي (محسوب من نفس بيانات الجدول):`, {
         totalGrossSales: totalGrossSales.toFixed(2),
         totalCostOfGoods: totalCostOfGoods.toFixed(2),
         totalNetProfit: totalNetProfit.toFixed(2),
         totalInvoices: totalInvoices,
         totalRefunds: totalRefunds,
-        daysWithSales: Object.keys(dailyData).length
+        daysWithSales: validDays.length
     });
     
-    // عرض الملخص باستخدام البيانات المحسوبة بدقة
+    // عرض الملخص باستخدام البيانات المحسوبة من نفس بيانات الجدول
     const sumEl = document.getElementById('profitSummary');
     if (sumEl) {
+        const netClass = totalNetProfit >= 0 ? 'positive' : 'negative';
         sumEl.innerHTML = `
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="gross-sales">Gross Sales</div>
@@ -994,7 +1036,7 @@ function renderProfitReports() {
             </div>
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="net-profit">Net Profit</div>
-                <div class="profit-summary-value">${formatCurrency(totalNetProfit,'USD')}</div>
+                <div class="profit-summary-value ${netClass}">${formatCurrency(totalNetProfit,'USD')}</div>
             </div>
             <div class="profit-summary-item">
                 <div class="profit-summary-title" data-i18n="invoices">Invoices</div>
@@ -1014,16 +1056,10 @@ function renderProfitReports() {
         });
     }
     
-    // === عرض الجدول ===
-    
-    // تحويل البيانات إلى مصفوفة وترتيبها حسب التاريخ
-    const validDays = Object.values(dailyData).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // تطبيق التنقل بالصفحات
     const totalDays = validDays.length;
-    
-    // تطبيق الترقيم
-    const currentPage = parseInt(sessionStorage.getItem('profit.currentPage')||'1')||1;
-    const totalPages = Math.ceil(totalDays / pageSize);
-    sessionStorage.setItem('profit.currentPage', String(Math.max(1, Math.min(totalPages, currentPage))));
+    const totalPages = Math.max(1, Math.ceil(totalDays / pageSize));
+    let currentPage = parseInt(sessionStorage.getItem('profit.currentPage') || '1') || 1;
     currentPage = Math.max(1, Math.min(totalPages, currentPage));
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
@@ -1048,6 +1084,62 @@ function renderProfitReports() {
                 `;
             }).join('');
         }
+    }
+    
+    // === التحقق من التطابق الدقيق بين المجاميع والجدول ===
+    
+    // حساب المجاميع من صفوف الجدول المعروضة للتأكد من التطابق
+    let tableGrossSales = 0;
+    let tableCostOfGoods = 0;
+    let tableInvoices = 0;
+    let tableRefunds = 0;
+    
+    validDays.forEach(day => {
+        tableGrossSales += day.grossSales;
+        tableCostOfGoods += day.costOfGoods;
+        tableInvoices += day.invoiceCount;
+        tableRefunds += day.refundCount;
+    });
+    
+    const tableNetProfit = tableGrossSales - tableCostOfGoods;
+    
+    // التحقق من التطابق الدقيق
+    const grossMatch = Math.abs(totalGrossSales - tableGrossSales) < 0.01;
+    const costMatch = Math.abs(totalCostOfGoods - tableCostOfGoods) < 0.01;
+    const profitMatch = Math.abs(totalNetProfit - tableNetProfit) < 0.01;
+    const invoiceMatch = totalInvoices === tableInvoices;
+    const refundMatch = totalRefunds === tableRefunds;
+    
+    console.log(`🔍 التحقق من التطابق الدقيق:`, {
+        'المجاميع من الملخص': {
+            grossSales: totalGrossSales.toFixed(2),
+            costOfGoods: totalCostOfGoods.toFixed(2),
+            netProfit: totalNetProfit.toFixed(2),
+            invoices: totalInvoices,
+            refunds: totalRefunds
+        },
+        'المجاميع من الجدول': {
+            grossSales: tableGrossSales.toFixed(2),
+            costOfGoods: tableCostOfGoods.toFixed(2),
+            netProfit: tableNetProfit.toFixed(2),
+            invoices: tableInvoices,
+            refunds: tableRefunds
+        },
+        'التطابق': {
+            grossSales: grossMatch ? '✅' : '❌',
+            costOfGoods: costMatch ? '✅' : '❌',
+            netProfit: profitMatch ? '✅' : '❌',
+            invoices: invoiceMatch ? '✅' : '❌',
+            refunds: refundMatch ? '✅' : '❌'
+        }
+    });
+    
+    if (!grossMatch || !costMatch || !profitMatch || !invoiceMatch || !refundMatch) {
+        console.error('❌ خطأ: المجاميع لا تطابق الجدول!');
+        console.error('المجاميع من الملخص:', totalGrossSales, totalCostOfGoods, totalNetProfit, totalInvoices, totalRefunds);
+        console.error('المجاميع من الجدول:', tableGrossSales, tableCostOfGoods, tableNetProfit, tableInvoices, tableRefunds);
+    } else {
+        console.log('✅ تم التحقق: المجاميع تطابق الجدول بالضبط (سنت بسنت)');
     }
     // عداد وترقيم
     const info = document.getElementById('profitCountInfo');
@@ -1133,7 +1225,209 @@ function exportProfitCSV(){
     }catch(e){ console.warn(e); }
 }
 function exportProfitPDF(){
-    try{ window.print(); }catch(e){ console.warn(e); }
+    console.log('🖨️ بدء طباعة تقرير الأرباح...');
+    
+    try {
+        // إنشاء نافذة طباعة محسنة لتقرير الأرباح
+        const printWindow = window.open('', '_blank', 'width=800,height=1000');
+        
+        if (!printWindow) {
+            console.error('❌ فشل في فتح نافذة الطباعة');
+            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+            return;
+        }
+        
+        // الحصول على محتوى التقرير
+        const profitSummary = document.getElementById('profitSummary');
+        const profitTable = document.getElementById('profitTable');
+        
+        if (!profitSummary || !profitTable) {
+            console.error('❌ لم يتم العثور على محتوى التقرير');
+            showMessage('خطأ: لم يتم العثور على محتوى التقرير', 'error');
+            printWindow.close();
+            return;
+        }
+        
+        const reportHTML = `
+        <!DOCTYPE html>
+        <html dir="${document.documentElement.dir || 'rtl'}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>تقرير الأرباح - ${settings.storeName || 'POS System'}</title>
+            <style>
+                @page { 
+                    size: A4; 
+                    margin: 20mm; 
+                }
+                body { 
+                    font-family: 'Cairo', 'Segoe UI', Arial, sans-serif; 
+                    margin: 0; 
+                    padding: 20px; 
+                    color: #333; 
+                    line-height: 1.6;
+                }
+                .report-header { 
+                    text-align: center; 
+                    margin-bottom: 30px; 
+                    border-bottom: 2px solid #333; 
+                    padding-bottom: 20px; 
+                }
+                .report-title { 
+                    font-size: 24px; 
+                    font-weight: bold; 
+                    margin-bottom: 10px; 
+                }
+                .report-date { 
+                    font-size: 14px; 
+                    color: #666; 
+                }
+                .summary-section { 
+                    margin-bottom: 30px; 
+                    padding: 20px; 
+                    background: #f8f9fa; 
+                    border-radius: 8px; 
+                }
+                .summary-grid { 
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                    gap: 20px; 
+                }
+                .summary-item { 
+                    text-align: center; 
+                    padding: 15px; 
+                    background: white; 
+                    border-radius: 6px; 
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+                }
+                .summary-title { 
+                    font-size: 14px; 
+                    color: #666; 
+                    margin-bottom: 8px; 
+                }
+                .summary-value { 
+                    font-size: 20px; 
+                    font-weight: bold; 
+                    color: #333; 
+                }
+                .table-section { 
+                    margin-top: 30px; 
+                }
+                .table-title { 
+                    font-size: 18px; 
+                    font-weight: bold; 
+                    margin-bottom: 15px; 
+                }
+                .report-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin-bottom: 20px; 
+                }
+                .report-table th, 
+                .report-table td { 
+                    padding: 12px; 
+                    text-align: left; 
+                    border: 1px solid #ddd; 
+                }
+                .report-table th { 
+                    background: #f8f9fa; 
+                    font-weight: bold; 
+                }
+                .report-table tr:nth-child(even) { 
+                    background: #f8f9fa; 
+                }
+                .footer { 
+                    margin-top: 30px; 
+                    text-align: center; 
+                    font-size: 12px; 
+                    color: #666; 
+                    border-top: 1px solid #ddd; 
+                    padding-top: 20px; 
+                }
+                @media print { 
+                    body { 
+                        margin: 0; 
+                        padding: 0; 
+                    }
+                    .summary-grid { 
+                        grid-template-columns: repeat(5, 1fr); 
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="report-header">
+                <div class="report-title">تقرير الأرباح</div>
+                <div class="report-date">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</div>
+            </div>
+            
+            <div class="summary-section">
+                <div class="summary-grid">
+                    ${profitSummary.innerHTML}
+                </div>
+            </div>
+            
+            <div class="table-section">
+                <div class="table-title">تفاصيل الأرباح اليومية</div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>عدد الفواتير</th>
+                            <th>إجمالي المبيعات</th>
+                            <th>إجمالي الكلفة</th>
+                            <th>صافي الربح</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${profitTable.innerHTML}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="footer">
+                <p>تم إنشاء التقرير بواسطة: ${settings.storeName || 'POS System'}</p>
+                <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
+            </div>
+        </body>
+        </html>
+        `;
+        
+        printWindow.document.write(reportHTML);
+        printWindow.document.close();
+        
+        // انتظار تحميل المحتوى ثم الطباعة
+        printWindow.onload = function() {
+            console.log('✅ تم تحميل محتوى التقرير، بدء الطباعة...');
+            setTimeout(() => {
+                try {
+                    printWindow.focus();
+                    printWindow.print();
+                    
+                    // إغلاق النافذة بعد الطباعة
+                    setTimeout(() => {
+                        printWindow.close();
+                        console.log('✅ تم إغلاق نافذة الطباعة');
+                    }, 1000);
+                } catch (printError) {
+                    console.error('❌ خطأ في الطباعة:', printError);
+                    showMessage('خطأ في الطباعة: ' + printError.message, 'error');
+                    printWindow.close();
+                }
+            }, 500);
+        };
+        
+        // معالجة الأخطاء
+        printWindow.onerror = function(error) {
+            console.error('❌ خطأ في نافذة الطباعة:', error);
+            showMessage('خطأ في نافذة الطباعة', 'error');
+            printWindow.close();
+        };
+        
+    } catch (error) {
+        console.error('❌ خطأ عام في طباعة التقرير:', error);
+        showMessage('خطأ في طباعة التقرير: ' + error.message, 'error');
+    }
 }
 // تعديل سعر عنصر في العربة وإظهار مقدار الخصم
 // Enhanced price editing flow: allow typing freely, validate on blur/enter/confirm
@@ -1266,7 +1560,7 @@ function recordStockMovement(type, productId, quantity, invoiceNumber, note) {
     try {
         const movements = loadFromStorage('stockMovements', []);
         movements.push({
-            timestamp: getLocalISOString(),
+            timestamp: new Date().toISOString(),
             type, // 'sale' | 'refund' | 'adjustment'
             productId,
             quantity,
@@ -1502,7 +1796,7 @@ function createActivationToken(licenseData) {
             start_at: licenseData.start_at,
             end_at: licenseData.end_at,
             lifetime: licenseData.lifetime,
-            created_at: getLocalISOString()
+            created_at: new Date().toISOString()
         };
         
         localStorage.setItem(ACTIVATION_TOKEN_KEY, JSON.stringify(tokenData));
@@ -1898,7 +2192,7 @@ function clearAllOperationalData() {
             cashUSD: 100.00,
             cashLBP: 0,
             transactions: [],
-            lastUpdate: getLocalISOString()
+            lastUpdate: new Date().toISOString()
         };
         saveToStorage('cashDrawer', cashDrawer);
         
@@ -3118,74 +3412,6 @@ function getLocalDateTimeISO() {
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 
-// ===== إصلاح فوري وعاجل لانزياح اليوم =====
-
-// دالة موحدة للحصول على الوقت المحلي الدقيق (بدون انزياح timezone)
-function getAccurateLocalTimestamp() {
-    const now = new Date();
-    
-    // إنشاء timestamp محلي دقيق بدون تحويل UTC
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const date = now.getDate();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-    const milliseconds = now.getMilliseconds();
-    
-    // إنشاء تاريخ محلي جديد بنفس القيم (بدون تحويل timezone)
-    const localDate = new Date(year, month, date, hours, minutes, seconds, milliseconds);
-    
-    console.log(`🕐 الوقت المحلي الدقيق: ${localDate.toLocaleString('ar-LB')} (${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')})`);
-    
-    return localDate;
-}
-
-// دالة للحصول على timestamp محلي بصيغة ISO (بدون Z)
-function getLocalISOString() {
-    const localDate = getAccurateLocalTimestamp();
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-    const hours = String(localDate.getHours()).padStart(2, '0');
-    const minutes = String(localDate.getMinutes()).padStart(2, '0');
-    const seconds = String(localDate.getSeconds()).padStart(2, '0');
-    const milliseconds = String(localDate.getMilliseconds()).padStart(3, '0');
-    
-    // تنسيق ISO محلي بدون حرف Z (بدون timezone)
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
-}
-
-// دالة للحصول على بداية اليوم المحلي الدقيق
-function getStartOfDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day, 0, 0, 0, 0);
-}
-
-// دالة للحصول على نهاية اليوم المحلي الدقيق
-function getEndOfDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day, 23, 59, 59, 999);
-}
-
-// دالة للحصول على بداية اليوم التالي المحلي
-function getStartOfNextDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day + 1, 0, 0, 0, 0);
-}
-
 // دالة للحصول على التاريخ المحلي فقط (YYYY-MM-DD)
 function getLocalDateString(date = null) {
     const d = date || new Date();
@@ -3194,74 +3420,6 @@ function getLocalDateString(date = null) {
     const day = String(d.getDate()).padStart(2, '0');
     
     return `${year}-${month}-${day}`;
-}
-
-// ===== إصلاح عطل فوري - انزياح يوم في تاريخ السجل =====
-
-// دالة موحدة للحصول على الوقت المحلي الدقيق (بدون انزياح timezone)
-function getAccurateLocalTimestamp() {
-    const now = new Date();
-    
-    // إنشاء timestamp محلي دقيق بدون تحويل UTC
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const date = now.getDate();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-    const milliseconds = now.getMilliseconds();
-    
-    // إنشاء تاريخ محلي جديد بنفس القيم (بدون تحويل timezone)
-    const localDate = new Date(year, month, date, hours, minutes, seconds, milliseconds);
-    
-    console.log(`🕐 الوقت المحلي الدقيق: ${localDate.toLocaleString('ar-LB')} (${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')})`);
-    
-    return localDate;
-}
-
-// دالة للحصول على timestamp محلي بصيغة ISO (بدون Z)
-function getLocalISOString() {
-    const localDate = getAccurateLocalTimestamp();
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-    const hours = String(localDate.getHours()).padStart(2, '0');
-    const minutes = String(localDate.getMinutes()).padStart(2, '0');
-    const seconds = String(localDate.getSeconds()).padStart(2, '0');
-    const milliseconds = String(localDate.getMilliseconds()).padStart(3, '0');
-    
-    // تنسيق ISO محلي بدون حرف Z (بدون timezone)
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}`;
-}
-
-// دالة للحصول على بداية اليوم المحلي الدقيق
-function getStartOfDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day, 0, 0, 0, 0);
-}
-
-// دالة للحصول على نهاية اليوم المحلي الدقيق
-function getEndOfDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day, 23, 59, 59, 999);
-}
-
-// دالة للحصول على بداية اليوم التالي المحلي
-function getStartOfNextDayLocal(date = null) {
-    const targetDate = date || new Date();
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const day = targetDate.getDate();
-    
-    return new Date(year, month, day + 1, 0, 0, 0, 0);
 }
 
 // دالة لتنسيق التاريخ والوقت
@@ -4816,7 +4974,7 @@ function confirmSupplierPayment() {
     supplierPayments.push({
         id: Math.max(0, ...supplierPayments.map(x=>x.id)) + 1,
         supplierId,
-        date: getLocalISOString(),
+        date: new Date().toISOString(),
         currency,
         amount,
         rate,
@@ -5344,7 +5502,7 @@ function exportData() {
         customerLogs: loadFromStorage('customerLogs', {}),
         cashDrawer: loadFromStorage('cashDrawer', {}),
         license_state: loadLicenseState(),
-        exportDate: getLocalISOString()
+        exportDate: new Date().toISOString()
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -5352,7 +5510,7 @@ function exportData() {
     
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `sales-system-backup-${getLocalISOString().split('T')[0]}.json`;
+    link.download = `sales-system-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     
     showMessage('تم تصدير البيانات بنجاح');
@@ -5626,1227 +5784,6 @@ window.checkSalesTimestampsStatus = checkSalesTimestampsStatus;
 window.validateReportsAccuracy = validateReportsAccuracy;
 window.generateTimestampReport = generateTimestampReport;
 
-// دالة اختبار فوري لإصلاح انزياح اليوم
-window.testUrgentDayShiftFix = function() {
-    console.log('🚨🚨🚨 اختبار فوري لإصلاح انزياح اليوم...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    const testResults = {
-        timestampAccuracy: { passed: 0, failed: 0, tests: [] },
-        dateRangeAccuracy: { passed: 0, failed: 0, tests: [] },
-        consistencyCheck: { passed: 0, failed: 0, tests: [] },
-        overall: 'pending'
-    };
-    
-    // اختبار 1: دقة timestamp المحلي
-    console.log('\n🕐 الاختبار 1: دقة timestamp المحلي');
-    try {
-        const localTimestamp = getAccurateLocalTimestamp();
-        const localISO = getLocalISOString();
-        const now = new Date();
-        
-        // التحقق من أن التاريخ هو اليوم الفعلي
-        if (localTimestamp.getDate() === now.getDate() && 
-            localTimestamp.getMonth() === now.getMonth() && 
-            localTimestamp.getFullYear() === now.getFullYear()) {
-            testResults.timestampAccuracy.passed++;
-            testResults.timestampAccuracy.tests.push({ name: 'التاريخ هو اليوم الفعلي', status: 'passed' });
-            console.log('   ✅ التاريخ هو اليوم الفعلي');
-        } else {
-            testResults.timestampAccuracy.failed++;
-            testResults.timestampAccuracy.tests.push({ name: 'التاريخ هو اليوم الفعلي', status: 'failed' });
-            console.log('   ❌ التاريخ ليس اليوم الفعلي');
-        }
-        
-        // التحقق من أن timestamp لا يحتوي على Z
-        if (!localISO.includes('Z') && !localISO.includes('+') && !localISO.includes('-', 10)) {
-            testResults.timestampAccuracy.passed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp محلي بدون Z', status: 'passed' });
-            console.log('   ✅ timestamp محلي بدون Z');
-        } else {
-            testResults.timestampAccuracy.failed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp محلي بدون Z', status: 'failed' });
-            console.log('   ❌ timestamp يحتوي على Z');
-        }
-    } catch (error) {
-        testResults.timestampAccuracy.failed++;
-        testResults.timestampAccuracy.tests.push({ name: 'دقة timestamp المحلي', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في دقة timestamp المحلي:', error.message);
-    }
-    
-    // اختبار 2: دقة حدود اليوم
-    console.log('\n📅 الاختبار 2: دقة حدود اليوم');
-    try {
-        const startOfDay = getStartOfDayLocal();
-        const endOfDay = getEndOfDayLocal();
-        const startOfNextDay = getStartOfNextDayLocal();
-        
-        // التحقق من بداية اليوم
-        if (startOfDay.getHours() === 0 && startOfDay.getMinutes() === 0 && startOfDay.getSeconds() === 0) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم 00:00:00', status: 'passed' });
-            console.log('   ✅ بداية اليوم صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم 00:00:00', status: 'failed' });
-            console.log('   ❌ بداية اليوم غير صحيحة');
-        }
-        
-        // التحقق من نهاية اليوم
-        if (endOfDay.getHours() === 23 && endOfDay.getMinutes() === 59 && endOfDay.getSeconds() === 59) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'نهاية اليوم 23:59:59', status: 'passed' });
-            console.log('   ✅ نهاية اليوم صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'نهاية اليوم 23:59:59', status: 'failed' });
-            console.log('   ❌ نهاية اليوم غير صحيحة');
-        }
-        
-        // التحقق من أن بداية اليوم التالي هي 00:00:00
-        if (startOfNextDay.getHours() === 0 && startOfNextDay.getMinutes() === 0 && startOfNextDay.getSeconds() === 0) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم التالي 00:00:00', status: 'passed' });
-            console.log('   ✅ بداية اليوم التالي صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم التالي 00:00:00', status: 'failed' });
-            console.log('   ❌ بداية اليوم التالي غير صحيحة');
-        }
-    } catch (error) {
-        testResults.dateRangeAccuracy.failed++;
-        testResults.dateRangeAccuracy.tests.push({ name: 'دقة حدود اليوم', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في دقة حدود اليوم:', error.message);
-    }
-    
-    // اختبار 3: تناسق النظام
-    console.log('\n🔄 الاختبار 3: تناسق النظام');
-    try {
-        // اختبار دالة getDateRange
-        const [startToday, endToday] = getDateRange('today');
-        const manualStart = getStartOfDayLocal();
-        const manualEnd = getEndOfDayLocal();
-        
-        if (startToday.getTime() === manualStart.getTime() && endToday.getTime() === manualEnd.getTime()) {
-            testResults.consistencyCheck.passed++;
-            testResults.consistencyCheck.tests.push({ name: 'تناسق getDateRange', status: 'passed' });
-            console.log('   ✅ تناسق getDateRange');
-        } else {
-            testResults.consistencyCheck.failed++;
-            testResults.consistencyCheck.tests.push({ name: 'تناسق getDateRange', status: 'failed' });
-            console.log('   ❌ عدم تناسق getDateRange');
-        }
-        
-        // اختبار أن اليوم الحالي ضمن النطاق
-        const now = getAccurateLocalTimestamp();
-        if (now >= startToday && now <= endToday) {
-            testResults.consistencyCheck.passed++;
-            testResults.consistencyCheck.tests.push({ name: 'اليوم الحالي ضمن النطاق', status: 'passed' });
-            console.log('   ✅ اليوم الحالي ضمن النطاق');
-        } else {
-            testResults.consistencyCheck.failed++;
-            testResults.consistencyCheck.tests.push({ name: 'اليوم الحالي ضمن النطاق', status: 'failed' });
-            console.log('   ❌ اليوم الحالي خارج النطاق');
-        }
-    } catch (error) {
-        testResults.consistencyCheck.failed++;
-        testResults.consistencyCheck.tests.push({ name: 'تناسق النظام', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في تناسق النظام:', error.message);
-    }
-    
-    // حساب النتيجة الإجمالية
-    const totalPassed = testResults.timestampAccuracy.passed + testResults.dateRangeAccuracy.passed + testResults.consistencyCheck.passed;
-    const totalFailed = testResults.timestampAccuracy.failed + testResults.dateRangeAccuracy.failed + testResults.consistencyCheck.failed;
-    const totalTests = totalPassed + totalFailed;
-    const passRate = totalTests > 0 ? ((totalPassed / totalTests) * 100).toFixed(1) : 0;
-    
-    if (totalFailed === 0) {
-        testResults.overall = 'passed';
-    } else if (passRate >= 80) {
-        testResults.overall = 'warning';
-    } else {
-        testResults.overall = 'failed';
-    }
-    
-    // طباعة التقرير النهائي
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📋 تقرير اختبار إصلاح انزياح اليوم الفوري');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📊 النتائج الإجمالية:`);
-    console.log(`   • إجمالي الاختبارات: ${totalTests}`);
-    console.log(`   • نجح: ${totalPassed} ✅`);
-    console.log(`   • فشل: ${totalFailed} ❌`);
-    console.log(`   • معدل النجاح: ${passRate}%`);
-    console.log(`   • الحالة: ${testResults.overall === 'passed' ? '✅ نجح' : testResults.overall === 'warning' ? '⚠️ تحذير' : '❌ فشل'}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    if (testResults.overall === 'passed') {
-        console.log('🎉🎉🎉 إصلاح انزياح اليوم نجح 100٪!');
-        showMessage('إصلاح انزياح اليوم نجح 100٪!', 'success');
-    } else if (testResults.overall === 'warning') {
-        console.log('⚠️ إصلاح انزياح اليوم نجح بشكل جيد لكن هناك بعض التحسينات الممكنة');
-        showMessage(`إصلاح انزياح اليوم نجح بشكل جيد (${passRate}%) لكن هناك ${totalFailed} اختبار فشل`, 'warning');
-    } else {
-        console.log('❌ إصلاح انزياح اليوم يحتاج إلى إصلاحات عاجلة');
-        showMessage(`إصلاح انزياح اليوم يحتاج إلى إصلاحات عاجلة (${totalFailed} اختبار فشل)`, 'error');
-    }
-    
-    return testResults;
-};
-
-// دالة لإعادة تحميل الصفحة وتطبيق الإصلاح الفوري
-window.reloadWithUrgentDayShiftFix = function() {
-    console.log('🚨 إعادة تحميل الصفحة لتطبيق الإصلاح الفوري لانزياح اليوم...');
-    console.log('⏳ سيتم إعادة التحميل خلال 3 ثوان...');
-    
-    // عرض رسالة للمستخدم
-    if (typeof showMessage === 'function') {
-        showMessage('إعادة تحميل الصفحة لتطبيق الإصلاح الفوري لانزياح اليوم...', 'info');
-    }
-    
-    setTimeout(() => {
-        window.location.reload();
-    }, 3000);
-};
-
-// دالة اختبار فوري لإصلاح انزياح اليوم - محدثة
-window.testUrgentDayShiftFixUpdated = function() {
-    console.log('🚨🚨🚨 اختبار فوري محدث لإصلاح انزياح اليوم...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    const testResults = {
-        timestampAccuracy: { passed: 0, failed: 0, tests: [] },
-        dateRangeAccuracy: { passed: 0, failed: 0, tests: [] },
-        consistencyCheck: { passed: 0, failed: 0, tests: [] },
-        overall: 'pending'
-    };
-    
-    // اختبار 1: دقة timestamp المحلي
-    console.log('\n🕐 الاختبار 1: دقة timestamp المحلي');
-    try {
-        const localTimestamp = getAccurateLocalTimestamp();
-        const localISO = getLocalISOString();
-        const now = new Date();
-        
-        // التحقق من أن التاريخ هو اليوم الفعلي
-        if (localTimestamp.getDate() === now.getDate() && 
-            localTimestamp.getMonth() === now.getMonth() && 
-            localTimestamp.getFullYear() === now.getFullYear()) {
-            testResults.timestampAccuracy.passed++;
-            testResults.timestampAccuracy.tests.push({ name: 'التاريخ هو اليوم الفعلي', status: 'passed' });
-            console.log('   ✅ التاريخ هو اليوم الفعلي');
-        } else {
-            testResults.timestampAccuracy.failed++;
-            testResults.timestampAccuracy.tests.push({ name: 'التاريخ هو اليوم الفعلي', status: 'failed' });
-            console.log('   ❌ التاريخ ليس اليوم الفعلي');
-        }
-        
-        // التحقق من أن timestamp لا يحتوي على Z
-        if (!localISO.includes('Z') && !localISO.includes('+') && !localISO.includes('-', 10)) {
-            testResults.timestampAccuracy.passed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp محلي بدون Z', status: 'passed' });
-            console.log('   ✅ timestamp محلي بدون Z');
-        } else {
-            testResults.timestampAccuracy.failed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp محلي بدون Z', status: 'failed' });
-            console.log('   ❌ timestamp يحتوي على Z');
-        }
-        
-        // التحقق من أن timestamp يحتوي على التاريخ الصحيح
-        const today = new Date();
-        const expectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        if (localISO.startsWith(expectedDate)) {
-            testResults.timestampAccuracy.passed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp يحتوي على التاريخ الصحيح', status: 'passed' });
-            console.log('   ✅ timestamp يحتوي على التاريخ الصحيح');
-        } else {
-            testResults.timestampAccuracy.failed++;
-            testResults.timestampAccuracy.tests.push({ name: 'timestamp يحتوي على التاريخ الصحيح', status: 'failed' });
-            console.log('   ❌ timestamp لا يحتوي على التاريخ الصحيح');
-        }
-    } catch (error) {
-        testResults.timestampAccuracy.failed++;
-        testResults.timestampAccuracy.tests.push({ name: 'دقة timestamp المحلي', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في دقة timestamp المحلي:', error.message);
-    }
-    
-    // اختبار 2: دقة حدود اليوم
-    console.log('\n📅 الاختبار 2: دقة حدود اليوم');
-    try {
-        const startOfDay = getStartOfDayLocal();
-        const endOfDay = getEndOfDayLocal();
-        const startOfNextDay = getStartOfNextDayLocal();
-        
-        // التحقق من بداية اليوم
-        if (startOfDay.getHours() === 0 && startOfDay.getMinutes() === 0 && startOfDay.getSeconds() === 0) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم 00:00:00', status: 'passed' });
-            console.log('   ✅ بداية اليوم صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم 00:00:00', status: 'failed' });
-            console.log('   ❌ بداية اليوم غير صحيحة');
-        }
-        
-        // التحقق من نهاية اليوم
-        if (endOfDay.getHours() === 23 && endOfDay.getMinutes() === 59 && endOfDay.getSeconds() === 59) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'نهاية اليوم 23:59:59', status: 'passed' });
-            console.log('   ✅ نهاية اليوم صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'نهاية اليوم 23:59:59', status: 'failed' });
-            console.log('   ❌ نهاية اليوم غير صحيحة');
-        }
-        
-        // التحقق من أن بداية اليوم التالي هي 00:00:00
-        if (startOfNextDay.getHours() === 0 && startOfNextDay.getMinutes() === 0 && startOfNextDay.getSeconds() === 0) {
-            testResults.dateRangeAccuracy.passed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم التالي 00:00:00', status: 'passed' });
-            console.log('   ✅ بداية اليوم التالي صحيحة');
-        } else {
-            testResults.dateRangeAccuracy.failed++;
-            testResults.dateRangeAccuracy.tests.push({ name: 'بداية اليوم التالي 00:00:00', status: 'failed' });
-            console.log('   ❌ بداية اليوم التالي غير صحيحة');
-        }
-    } catch (error) {
-        testResults.dateRangeAccuracy.failed++;
-        testResults.dateRangeAccuracy.tests.push({ name: 'دقة حدود اليوم', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في دقة حدود اليوم:', error.message);
-    }
-    
-    // اختبار 3: تناسق النظام
-    console.log('\n🔄 الاختبار 3: تناسق النظام');
-    try {
-        // اختبار دالة getDateRange
-        const [startToday, endToday] = getDateRange('today');
-        const manualStart = getStartOfDayLocal();
-        const manualEnd = getEndOfDayLocal();
-        
-        if (startToday.getTime() === manualStart.getTime() && endToday.getTime() === manualEnd.getTime()) {
-            testResults.consistencyCheck.passed++;
-            testResults.consistencyCheck.tests.push({ name: 'تناسق getDateRange', status: 'passed' });
-            console.log('   ✅ تناسق getDateRange');
-        } else {
-            testResults.consistencyCheck.failed++;
-            testResults.consistencyCheck.tests.push({ name: 'تناسق getDateRange', status: 'failed' });
-            console.log('   ❌ عدم تناسق getDateRange');
-        }
-        
-        // اختبار أن اليوم الحالي ضمن النطاق
-        const now = getAccurateLocalTimestamp();
-        if (now >= startToday && now <= endToday) {
-            testResults.consistencyCheck.passed++;
-            testResults.consistencyCheck.tests.push({ name: 'اليوم الحالي ضمن النطاق', status: 'passed' });
-            console.log('   ✅ اليوم الحالي ضمن النطاق');
-        } else {
-            testResults.consistencyCheck.failed++;
-            testResults.consistencyCheck.tests.push({ name: 'اليوم الحالي ضمن النطاق', status: 'failed' });
-            console.log('   ❌ اليوم الحالي خارج النطاق');
-        }
-    } catch (error) {
-        testResults.consistencyCheck.failed++;
-        testResults.consistencyCheck.tests.push({ name: 'تناسق النظام', status: 'error', error: error.message });
-        console.log('   ❌ خطأ في تناسق النظام:', error.message);
-    }
-    
-    // حساب النتيجة الإجمالية
-    const totalPassed = testResults.timestampAccuracy.passed + testResults.dateRangeAccuracy.passed + testResults.consistencyCheck.passed;
-    const totalFailed = testResults.timestampAccuracy.failed + testResults.dateRangeAccuracy.failed + testResults.consistencyCheck.failed;
-    const totalTests = totalPassed + totalFailed;
-    const passRate = totalTests > 0 ? ((totalPassed / totalTests) * 100).toFixed(1) : 0;
-    
-    if (totalFailed === 0) {
-        testResults.overall = 'passed';
-    } else if (passRate >= 80) {
-        testResults.overall = 'warning';
-    } else {
-        testResults.overall = 'failed';
-    }
-    
-    // طباعة التقرير النهائي
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📋 تقرير اختبار إصلاح انزياح اليوم الفوري المحدث');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📊 النتائج الإجمالية:`);
-    console.log(`   • إجمالي الاختبارات: ${totalTests}`);
-    console.log(`   • نجح: ${totalPassed} ✅`);
-    console.log(`   • فشل: ${totalFailed} ❌`);
-    console.log(`   • معدل النجاح: ${passRate}%`);
-    console.log(`   • الحالة: ${testResults.overall === 'passed' ? '✅ نجح' : testResults.overall === 'warning' ? '⚠️ تحذير' : '❌ فشل'}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    if (testResults.overall === 'passed') {
-        console.log('🎉🎉🎉 إصلاح انزياح اليوم نجح 100٪!');
-        showMessage('إصلاح انزياح اليوم نجح 100٪!', 'success');
-    } else if (testResults.overall === 'warning') {
-        console.log('⚠️ إصلاح انزياح اليوم نجح بشكل جيد لكن هناك بعض التحسينات الممكنة');
-        showMessage(`إصلاح انزياح اليوم نجح بشكل جيد (${passRate}%) لكن هناك ${totalFailed} اختبار فشل`, 'warning');
-    } else {
-        console.log('❌ إصلاح انزياح اليوم يحتاج إلى إصلاحات عاجلة');
-        showMessage(`إصلاح انزياح اليوم يحتاج إلى إصلاحات عاجلة (${totalFailed} اختبار فشل)`, 'error');
-    }
-    
-    return testResults;
-};
-
-// ===== إصلاح فوري وعاجل - دالة شاملة =====
-
-// دالة إصلاح فوري وعاجل لانزياح اليوم
-window.urgentDayShiftFix = function() {
-    console.log('🚨🚨🚨 إصلاح فوري وعاجل لانزياح اليوم...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // الخطوة 1: التحقق من الدوال المطلوبة
-        console.log('🔍 الخطوة 1: التحقق من الدوال المطلوبة');
-        
-        if (typeof getLocalISOString !== 'function') {
-            console.error('❌ دالة getLocalISOString غير موجودة!');
-            return false;
-        }
-        
-        if (typeof getAccurateLocalTimestamp !== 'function') {
-            console.error('❌ دالة getAccurateLocalTimestamp غير موجودة!');
-            return false;
-        }
-        
-        console.log('✅ جميع الدوال المطلوبة موجودة');
-        
-        // الخطوة 2: اختبار timestamp محلي
-        console.log('\n🕐 الخطوة 2: اختبار timestamp محلي');
-        const localTimestamp = getAccurateLocalTimestamp();
-        const localISO = getLocalISOString();
-        const now = new Date();
-        
-        console.log(`📅 التاريخ الحالي: ${now.toLocaleDateString('ar-LB')}`);
-        console.log(`📅 timestamp محلي: ${localISO}`);
-        console.log(`📅 اليوم من timestamp: ${localTimestamp.getDate()}`);
-        console.log(`📅 اليوم الحالي: ${now.getDate()}`);
-        
-        if (localTimestamp.getDate() === now.getDate()) {
-            console.log('✅ timestamp محلي صحيح');
-        } else {
-            console.log('❌ timestamp محلي غير صحيح');
-            return false;
-        }
-        
-        // الخطوة 3: إصلاح الفواتير الموجودة
-        console.log('\n🔧 الخطوة 3: إصلاح الفواتير الموجودة');
-        const sales = loadFromStorage('sales', []);
-        let fixedCount = 0;
-        
-        sales.forEach(sale => {
-            if (sale.timestamp && sale.timestamp.includes('Z')) {
-                // إصلاح timestamp يحتوي على Z
-                const oldTimestamp = sale.timestamp;
-                sale.timestamp = getLocalISOString();
-                fixedCount++;
-                console.log(`🔧 تم إصلاح فاتورة ${sale.invoiceNumber}: ${oldTimestamp} → ${sale.timestamp}`);
-            }
-        });
-        
-        if (fixedCount > 0) {
-            saveToStorage('sales', sales);
-            console.log(`✅ تم إصلاح ${fixedCount} فاتورة`);
-        } else {
-            console.log('✅ لا توجد فواتير تحتاج إصلاح');
-        }
-        
-        // الخطوة 4: اختبار إنشاء فاتورة جديدة
-        console.log('\n🧪 الخطوة 4: اختبار إنشاء فاتورة جديدة');
-        const testSale = {
-            id: Date.now(),
-            invoiceNumber: `TEST-${Date.now()}`,
-            date: getLocalISOString().split('T')[0],
-            timestamp: getLocalISOString(),
-            customer: 'اختبار إصلاح',
-            amount: 1.00,
-            paymentMethod: 'نقدي',
-            items: []
-        };
-        
-        console.log(`📄 فاتورة اختبار: ${testSale.timestamp}`);
-        console.log(`📅 تاريخ الفاتورة: ${testSale.date}`);
-        
-        // الخطوة 5: التحقق من حدود اليوم
-        console.log('\n📅 الخطوة 5: التحقق من حدود اليوم');
-        const startOfDay = getStartOfDayLocal();
-        const endOfDay = getEndOfDayLocal();
-        
-        console.log(`📅 بداية اليوم: ${startOfDay.toLocaleString('ar-LB')}`);
-        console.log(`📅 نهاية اليوم: ${endOfDay.toLocaleString('ar-LB')}`);
-        
-        // الخطوة 6: اختبار دالة getDateRange
-        console.log('\n🔄 الخطوة 6: اختبار دالة getDateRange');
-        try {
-            const [startToday, endToday] = getDateRange('today');
-            console.log(`📅 getDateRange - بداية: ${startToday.toLocaleString('ar-LB')}`);
-            console.log(`📅 getDateRange - نهاية: ${endToday.toLocaleString('ar-LB')}`);
-            
-            if (startToday.getTime() === startOfDay.getTime() && endToday.getTime() === endOfDay.getTime()) {
-                console.log('✅ دالة getDateRange تعمل بشكل صحيح');
-            } else {
-                console.log('❌ دالة getDateRange لا تعمل بشكل صحيح');
-            }
-        } catch (error) {
-            console.error('❌ خطأ في دالة getDateRange:', error);
-        }
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم إصلاح انزياح اليوم بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم إصلاح انزياح اليوم بنجاح!', 'success');
-        }
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ خطأ في الإصلاح:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في الإصلاح: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إصلاح شامل لجميع الفواتير القديمة
-window.fixAllOldInvoices = function() {
-    console.log('🔧🔧🔧 إصلاح شامل لجميع الفواتير القديمة...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // تحميل جميع البيانات
-        const sales = loadFromStorage('sales', []);
-        const salesLogs = loadFromStorage('salesLogs', []);
-        const customerLogs = loadFromStorage('customerLogs', {});
-        
-        console.log(`📊 إجمالي الفواتير: ${sales.length}`);
-        console.log(`📊 إجمالي سجل المبيعات: ${salesLogs.length}`);
-        
-        let fixedSales = 0;
-        let fixedLogs = 0;
-        let fixedCustomerLogs = 0;
-        
-        // إصلاح الفواتير
-        console.log('\n🔧 إصلاح الفواتير...');
-        sales.forEach(sale => {
-            let needsFix = false;
-            
-            // إصلاح timestamp يحتوي على Z
-            if (sale.timestamp && sale.timestamp.includes('Z')) {
-                const oldTimestamp = sale.timestamp;
-                sale.timestamp = getLocalISOString();
-                needsFix = true;
-                console.log(`🔧 فاتورة ${sale.invoiceNumber}: ${oldTimestamp} → ${sale.timestamp}`);
-            }
-            
-            // إصلاح date إذا كان خاطئ
-            if (sale.date && sale.date.includes('2025-10-20')) {
-                const today = new Date();
-                const correctDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                sale.date = correctDate;
-                needsFix = true;
-                console.log(`🔧 فاتورة ${sale.invoiceNumber}: تاريخ ${sale.date} → ${correctDate}`);
-            }
-            
-            if (needsFix) {
-                fixedSales++;
-            }
-        });
-        
-        // إصلاح سجل المبيعات
-        console.log('\n🔧 إصلاح سجل المبيعات...');
-        salesLogs.forEach(log => {
-            if (log.timestamp && log.timestamp.includes('Z')) {
-                const oldTimestamp = log.timestamp;
-                log.timestamp = getLocalISOString();
-                fixedLogs++;
-                console.log(`🔧 سجل مبيعات ${log.invoiceNumber}: ${oldTimestamp} → ${log.timestamp}`);
-            }
-        });
-        
-        // إصلاح سجل العملاء
-        console.log('\n🔧 إصلاح سجل العملاء...');
-        Object.keys(customerLogs).forEach(customerId => {
-            const logs = customerLogs[customerId];
-            if (Array.isArray(logs)) {
-                logs.forEach(log => {
-                    if (log.timestamp && log.timestamp.includes('Z')) {
-                        const oldTimestamp = log.timestamp;
-                        log.timestamp = getLocalISOString();
-                        fixedCustomerLogs++;
-                        console.log(`🔧 سجل عميل ${customerId}: ${oldTimestamp} → ${log.timestamp}`);
-                    }
-                });
-            }
-        });
-        
-        // حفظ البيانات المحدثة
-        if (fixedSales > 0) {
-            saveToStorage('sales', sales);
-            console.log(`✅ تم إصلاح ${fixedSales} فاتورة`);
-        }
-        
-        if (fixedLogs > 0) {
-            saveToStorage('salesLogs', salesLogs);
-            console.log(`✅ تم إصلاح ${fixedLogs} سجل مبيعات`);
-        }
-        
-        if (fixedCustomerLogs > 0) {
-            saveToStorage('customerLogs', customerLogs);
-            console.log(`✅ تم إصلاح ${fixedCustomerLogs} سجل عميل`);
-        }
-        
-        // إصلاح إضافي: تصحيح التواريخ الخاطئة
-        console.log('\n🔧 تصحيح التواريخ الخاطئة...');
-        let correctedDates = 0;
-        
-        sales.forEach(sale => {
-            if (sale.timestamp) {
-                const saleDate = new Date(sale.timestamp);
-                const today = new Date();
-                
-                // إذا كان تاريخ البيع هو اليوم ولكن timestamp يظهر أمس
-                if (saleDate.getDate() === today.getDate() - 1 && 
-                    saleDate.getMonth() === today.getMonth() && 
-                    saleDate.getFullYear() === today.getFullYear()) {
-                    
-                    // تصحيح timestamp ليكون اليوم
-                    const correctedTimestamp = getLocalISOString();
-                    sale.timestamp = correctedTimestamp;
-                    sale.date = correctedTimestamp.split('T')[0];
-                    correctedDates++;
-                    console.log(`🔧 تصحيح فاتورة ${sale.invoiceNumber}: ${sale.timestamp} → ${correctedTimestamp}`);
-                }
-            }
-        });
-        
-        if (correctedDates > 0) {
-            saveToStorage('sales', sales);
-            console.log(`✅ تم تصحيح ${correctedDates} تاريخ`);
-        }
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم إصلاح جميع الفواتير القديمة بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`📊 ملخص الإصلاح:`);
-        console.log(`   • فواتير مصلحة: ${fixedSales}`);
-        console.log(`   • سجل مبيعات مصلح: ${fixedLogs}`);
-        console.log(`   • سجل عملاء مصلح: ${fixedCustomerLogs}`);
-        console.log(`   • تواريخ مصححة: ${correctedDates}`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage(`تم إصلاح ${fixedSales} فاتورة و ${fixedLogs} سجل مبيعات و ${fixedCustomerLogs} سجل عميل!`, 'success');
-        }
-        
-        return {
-            fixedSales,
-            fixedLogs,
-            fixedCustomerLogs,
-            correctedDates
-        };
-        
-    } catch (error) {
-        console.error('❌ خطأ في إصلاح الفواتير القديمة:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في إصلاح الفواتير القديمة: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إصلاح شامل لجميع البيانات
-window.fixAllDataComprehensive = function() {
-    console.log('🚨🚨🚨 إصلاح شامل لجميع البيانات...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // الخطوة 1: إصلاح الفواتير القديمة
-        console.log('🔧 الخطوة 1: إصلاح الفواتير القديمة');
-        const invoiceResult = window.fixAllOldInvoices();
-        
-        // الخطوة 2: إصلاح النظام العام
-        console.log('\n🔧 الخطوة 2: إصلاح النظام العام');
-        const systemResult = window.urgentDayShiftFix();
-        
-        // الخطوة 3: اختبار شامل
-        console.log('\n🧪 الخطوة 3: اختبار شامل');
-        const testResult = window.testUrgentDayShiftFixUpdated();
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم إصلاح جميع البيانات بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم إصلاح جميع البيانات بنجاح!', 'success');
-        }
-        
-        return {
-            invoices: invoiceResult,
-            system: systemResult,
-            test: testResult
-        };
-        
-    } catch (error) {
-        console.error('❌ خطأ في الإصلاح الشامل:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في الإصلاح الشامل: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة ترتيب الفواتير حسب الوقت (الأحدث أولاً)
-window.sortSalesByTime = function() {
-    console.log('📅 ترتيب الفواتير حسب الوقت (الأحدث أولاً)...');
-    
-    try {
-        const sales = loadFromStorage('sales', []);
-        console.log(`📊 إجمالي الفواتير قبل الترتيب: ${sales.length}`);
-        
-        // ترتيب الفواتير حسب الوقت (الأحدث أولاً)
-        const sortedSales = sales.sort((a, b) => {
-            // أولاً: حسب timestamp (الأحدث أولاً)
-            const timeA = new Date(a.timestamp || a.date || 0);
-            const timeB = new Date(b.timestamp || b.date || 0);
-            
-            if (timeA.getTime() !== timeB.getTime()) {
-                return timeB.getTime() - timeA.getTime(); // الأحدث أولاً
-            }
-            
-            // ثانياً: حسب رقم الفاتورة (الأحدث أولاً)
-            const invoiceA = parseInt(a.invoiceNumber?.replace('INV-', '') || '0');
-            const invoiceB = parseInt(b.invoiceNumber?.replace('INV-', '') || '0');
-            
-            return invoiceB - invoiceA; // الأحدث أولاً
-        });
-        
-        // حفظ البيانات المرتبة
-        saveToStorage('sales', sortedSales);
-        console.log(`✅ تم ترتيب ${sortedSales.length} فاتورة حسب الوقت`);
-        
-        // عرض أول 5 فواتير للتحقق
-        console.log('📋 أول 5 فواتير بعد الترتيب:');
-        sortedSales.slice(0, 5).forEach((sale, index) => {
-            console.log(`   ${index + 1}. ${sale.invoiceNumber} - ${sale.timestamp || sale.date} - ${sale.customer}`);
-        });
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم ترتيب الفواتير حسب الوقت بنجاح!', 'success');
-        }
-        
-        return sortedSales;
-        
-    } catch (error) {
-        console.error('❌ خطأ في ترتيب الفواتير:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في ترتيب الفواتير: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إجبار تحديث السجل مع الترتيب
-window.forceRefreshSalesTable = function() {
-    console.log('🔄 إجبار تحديث سجل المبيعات...');
-    
-    try {
-        // إعادة تحميل البيانات من localStorage
-        const sales = loadFromStorage('sales', []);
-        console.log(`📊 تم تحميل ${sales.length} فاتورة من localStorage`);
-        
-        // ترتيب الفواتير حسب الوقت
-        console.log('📅 ترتيب الفواتير حسب الوقت...');
-        const sortedSales = window.sortSalesByTime();
-        
-        // إعادة عرض الجدول
-        if (typeof loadSales === 'function') {
-            loadSales();
-            console.log('✅ تم إعادة تحميل سجل المبيعات');
-        }
-        
-        // إعادة عرض التقارير إذا كانت مفتوحة
-        if (typeof renderProfitReports === 'function') {
-            renderProfitReports();
-            console.log('✅ تم إعادة تحميل تقارير الأرباح');
-        }
-        
-        // إعادة عرض لوحة التحكم
-        if (typeof loadDashboard === 'function') {
-            loadDashboard();
-            console.log('✅ تم إعادة تحميل لوحة التحكم');
-        }
-        
-        console.log('🎉 تم تحديث السجل بنجاح!');
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم تحديث السجل بنجاح!', 'success');
-        }
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ خطأ في تحديث السجل:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في تحديث السجل: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إجبار إعادة تحميل الصفحة
-window.forceReloadWithFix = function() {
-    console.log('🔄 إجبار إعادة تحميل الصفحة مع الإصلاح...');
-    
-    // تطبيق الإصلاح أولاً
-    const fixResult = window.urgentDayShiftFix();
-    
-    if (fixResult) {
-        console.log('✅ تم تطبيق الإصلاح بنجاح');
-        console.log('🔄 إعادة تحميل الصفحة خلال 3 ثوان...');
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم تطبيق الإصلاح بنجاح! إعادة تحميل الصفحة...', 'success');
-        }
-        
-        setTimeout(() => {
-            window.location.reload(true); // إجبار إعادة تحميل من السيرفر
-        }, 3000);
-    } else {
-        console.log('❌ فشل في تطبيق الإصلاح');
-        if (typeof showMessage === 'function') {
-            showMessage('فشل في تطبيق الإصلاح', 'error');
-        }
-    }
-};
-
-// دالة لحذف الفواتير المزيفة
-window.removeFakeInvoices = function() {
-    console.log('🗑️🗑️🗑️ حذف الفواتير المزيفة...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        const sales = loadFromStorage('sales', []);
-        const today = new Date();
-        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        console.log(`📊 إجمالي الفواتير قبل الحذف: ${sales.length}`);
-        console.log(`📅 اليوم الحالي: ${todayString}`);
-        
-        // العثور على الفواتير المزيفة
-        const fakeInvoices = sales.filter(sale => {
-            // فواتير بتاريخ اليوم مع timestamp حديث جداً
-            if (sale.date === todayString && sale.timestamp) {
-                const saleTime = new Date(sale.timestamp);
-                const now = new Date();
-                const timeDiff = now.getTime() - saleTime.getTime();
-                
-                // إذا كان الفرق أقل من 5 دقائق، فهي مزيفة
-                if (timeDiff < 5 * 60 * 1000) {
-                    return true;
-                }
-            }
-            
-            // فواتير اختبار
-            if (sale.customer === 'اختبار إصلاح' || 
-                sale.customer === 'عميل تجريبي' ||
-                sale.invoiceNumber?.includes('TEST-')) {
-                return true;
-            }
-            
-            return false;
-        });
-        
-        console.log(`🔍 تم العثور على ${fakeInvoices.length} فاتورة مزيفة`);
-        
-        if (fakeInvoices.length > 0) {
-            // حذف الفواتير المزيفة
-            const realSales = sales.filter(sale => !fakeInvoices.includes(sale));
-            
-            // حفظ البيانات المحدثة
-            saveToStorage('sales', realSales);
-            
-            console.log(`✅ تم حذف ${fakeInvoices.length} فاتورة مزيفة`);
-            console.log(`📊 إجمالي الفواتير بعد الحذف: ${realSales.length}`);
-            
-            // عرض تفاصيل الفواتير المحذوفة
-            fakeInvoices.forEach(invoice => {
-                console.log(`🗑️ تم حذف: ${invoice.invoiceNumber} - ${invoice.customer} - ${invoice.date}`);
-            });
-            
-            if (typeof showMessage === 'function') {
-                showMessage(`تم حذف ${fakeInvoices.length} فاتورة مزيفة!`, 'success');
-            }
-            
-            return {
-                deleted: fakeInvoices.length,
-                remaining: realSales.length,
-                fakeInvoices: fakeInvoices
-            };
-        } else {
-            console.log('✅ لا توجد فواتير مزيفة');
-            if (typeof showMessage === 'function') {
-                showMessage('لا توجد فواتير مزيفة', 'info');
-            }
-            return { deleted: 0, remaining: sales.length, fakeInvoices: [] };
-        }
-        
-    } catch (error) {
-        console.error('❌ خطأ في حذف الفواتير المزيفة:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في حذف الفواتير المزيفة: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إصلاح صحيح بدون إضافة فواتير مزيفة
-window.fixInvoicesCorrectly = function() {
-    console.log('🔧🔧🔧 إصلاح صحيح للفواتير...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // الخطوة 1: حذف الفواتير المزيفة
-        console.log('🗑️ الخطوة 1: حذف الفواتير المزيفة');
-        const deleteResult = window.removeFakeInvoices();
-        
-        // الخطوة 2: إصلاح الفواتير الحقيقية فقط
-        console.log('\n🔧 الخطوة 2: إصلاح الفواتير الحقيقية');
-        const sales = loadFromStorage('sales', []);
-        let fixedCount = 0;
-        
-        sales.forEach(sale => {
-            let needsFix = false;
-            
-            // إصلاح timestamp يحتوي على Z
-            if (sale.timestamp && sale.timestamp.includes('Z')) {
-                const oldTimestamp = sale.timestamp;
-                sale.timestamp = getLocalISOString();
-                needsFix = true;
-                console.log(`🔧 فاتورة ${sale.invoiceNumber}: ${oldTimestamp} → ${sale.timestamp}`);
-            }
-            
-            if (needsFix) {
-                fixedCount++;
-            }
-        });
-        
-        if (fixedCount > 0) {
-            saveToStorage('sales', sales);
-            console.log(`✅ تم إصلاح ${fixedCount} فاتورة حقيقية`);
-        }
-        
-        // الخطوة 3: إجبار تحديث السجل
-        console.log('\n🔄 الخطوة 3: إجبار تحديث السجل');
-        const refreshResult = window.forceRefreshSalesTable();
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم الإصلاح الصحيح بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`📊 ملخص الإصلاح:`);
-        console.log(`   • فواتير مزيفة محذوفة: ${deleteResult.deleted}`);
-        console.log(`   • فواتير حقيقية مصلحة: ${fixedCount}`);
-        console.log(`   • إجمالي الفواتير المتبقية: ${deleteResult.remaining}`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage(`تم حذف ${deleteResult.deleted} فاتورة مزيفة وإصلاح ${fixedCount} فاتورة حقيقية!`, 'success');
-        }
-        
-        return {
-            deleted: deleteResult.deleted,
-            fixed: fixedCount,
-            remaining: deleteResult.remaining
-        };
-        
-    } catch (error) {
-        console.error('❌ خطأ في الإصلاح الصحيح:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في الإصلاح الصحيح: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة للتحقق من الفواتير المشبوهة
-window.checkSuspiciousInvoices = function() {
-    console.log('🔍🔍🔍 التحقق من الفواتير المشبوهة...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        const sales = loadFromStorage('sales', []);
-        const today = new Date();
-        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        console.log(`📊 إجمالي الفواتير: ${sales.length}`);
-        console.log(`📅 اليوم الحالي: ${todayString}`);
-        
-        // العثور على الفواتير المشبوهة
-        const suspiciousInvoices = sales.filter(sale => {
-            // فواتير بتاريخ اليوم
-            if (sale.date === todayString) {
-                // فواتير اختبار
-                if (sale.customer === 'اختبار إصلاح' || 
-                    sale.customer === 'عميل تجريبي' ||
-                    sale.invoiceNumber?.includes('TEST-')) {
-                    return true;
-                }
-                
-                // فواتير مع timestamp حديث جداً (أقل من 10 دقائق)
-                if (sale.timestamp) {
-                    const saleTime = new Date(sale.timestamp);
-                    const now = new Date();
-                    const timeDiff = now.getTime() - saleTime.getTime();
-                    
-                    if (timeDiff < 10 * 60 * 1000) { // أقل من 10 دقائق
-                        return true;
-                    }
-                }
-                
-                // فواتير مع مبالغ صغيرة جداً (أقل من $1)
-                if (sale.amount && sale.amount < 1) {
-                    return true;
-                }
-                
-                // فواتير مع نفس العميل (أكثر من 5 فواتير)
-                const sameCustomerCount = sales.filter(s => 
-                    s.customer === sale.customer && s.date === todayString
-                ).length;
-                
-                if (sameCustomerCount > 5) {
-                    return true;
-                }
-            }
-            
-            return false;
-        });
-        
-        console.log(`🔍 تم العثور على ${suspiciousInvoices.length} فاتورة مشبوهة`);
-        
-        if (suspiciousInvoices.length > 0) {
-            console.log('📋 تفاصيل الفواتير المشبوهة:');
-            suspiciousInvoices.forEach((invoice, index) => {
-                console.log(`   ${index + 1}. ${invoice.invoiceNumber} - ${invoice.customer} - $${invoice.amount} - ${invoice.timestamp || invoice.date}`);
-            });
-            
-            return {
-                total: sales.length,
-                suspicious: suspiciousInvoices.length,
-                suspiciousInvoices: suspiciousInvoices
-            };
-        } else {
-            console.log('✅ لا توجد فواتير مشبوهة');
-            return {
-                total: sales.length,
-                suspicious: 0,
-                suspiciousInvoices: []
-            };
-        }
-        
-    } catch (error) {
-        console.error('❌ خطأ في التحقق من الفواتير المشبوهة:', error);
-        return false;
-    }
-};
-
-// دالة حذف الفواتير المشبوهة
-window.removeSuspiciousInvoices = function() {
-    console.log('🗑️🗑️🗑️ حذف الفواتير المشبوهة...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        const sales = loadFromStorage('sales', []);
-        const today = new Date();
-        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        
-        console.log(`📊 إجمالي الفواتير قبل الحذف: ${sales.length}`);
-        console.log(`📅 اليوم الحالي: ${todayString}`);
-        
-        // العثور على الفواتير المشبوهة
-        const suspiciousInvoices = sales.filter(sale => {
-            if (sale.date === todayString) {
-                // فواتير اختبار
-                if (sale.customer === 'اختبار إصلاح' || 
-                    sale.customer === 'عميل تجريبي' ||
-                    sale.invoiceNumber?.includes('TEST-')) {
-                    return true;
-                }
-                
-                // فواتير مع timestamp حديث جداً (أقل من 10 دقائق)
-                if (sale.timestamp) {
-                    const saleTime = new Date(sale.timestamp);
-                    const now = new Date();
-                    const timeDiff = now.getTime() - saleTime.getTime();
-                    
-                    if (timeDiff < 10 * 60 * 1000) { // أقل من 10 دقائق
-                        return true;
-                    }
-                }
-                
-                // فواتير مع مبالغ صغيرة جداً (أقل من $1)
-                if (sale.amount && sale.amount < 1) {
-                    return true;
-                }
-            }
-            
-            return false;
-        });
-        
-        console.log(`🔍 تم العثور على ${suspiciousInvoices.length} فاتورة مشبوهة`);
-        
-        if (suspiciousInvoices.length > 0) {
-            // حذف الفواتير المشبوهة
-            const realSales = sales.filter(sale => !suspiciousInvoices.includes(sale));
-            
-            // حفظ البيانات المحدثة
-            saveToStorage('sales', realSales);
-            
-            console.log(`✅ تم حذف ${suspiciousInvoices.length} فاتورة مشبوهة`);
-            console.log(`📊 إجمالي الفواتير بعد الحذف: ${realSales.length}`);
-            
-            // عرض تفاصيل الفواتير المحذوفة
-            suspiciousInvoices.forEach(invoice => {
-                console.log(`🗑️ تم حذف: ${invoice.invoiceNumber} - ${invoice.customer} - $${invoice.amount} - ${invoice.date}`);
-            });
-            
-            if (typeof showMessage === 'function') {
-                showMessage(`تم حذف ${suspiciousInvoices.length} فاتورة مشبوهة!`, 'success');
-            }
-            
-            return {
-                deleted: suspiciousInvoices.length,
-                remaining: realSales.length,
-                suspiciousInvoices: suspiciousInvoices
-            };
-        } else {
-            console.log('✅ لا توجد فواتير مشبوهة');
-            if (typeof showMessage === 'function') {
-                showMessage('لا توجد فواتير مشبوهة', 'info');
-            }
-            return { deleted: 0, remaining: sales.length, suspiciousInvoices: [] };
-        }
-        
-    } catch (error) {
-        console.error('❌ خطأ في حذف الفواتير المشبوهة:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في حذف الفواتير المشبوهة: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إصلاح شامل مع ترتيب السجل
-window.fixAndSortEverything = function() {
-    console.log('🚨🚨🚨 إصلاح شامل مع ترتيب السجل...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // الخطوة 1: حذف الفواتير المزيفة
-        console.log('🗑️ الخطوة 1: حذف الفواتير المزيفة');
-        const deleteResult = window.removeFakeInvoices();
-        
-        // الخطوة 2: إصلاح الفواتير الحقيقية
-        console.log('\n🔧 الخطوة 2: إصلاح الفواتير الحقيقية');
-        const sales = loadFromStorage('sales', []);
-        let fixedCount = 0;
-        
-        sales.forEach(sale => {
-            if (sale.timestamp && sale.timestamp.includes('Z')) {
-                const oldTimestamp = sale.timestamp;
-                sale.timestamp = getLocalISOString();
-                fixedCount++;
-                console.log(`🔧 فاتورة ${sale.invoiceNumber}: ${oldTimestamp} → ${sale.timestamp}`);
-            }
-        });
-        
-        if (fixedCount > 0) {
-            saveToStorage('sales', sales);
-            console.log(`✅ تم إصلاح ${fixedCount} فاتورة حقيقية`);
-        }
-        
-        // الخطوة 3: ترتيب الفواتير حسب الوقت
-        console.log('\n📅 الخطوة 3: ترتيب الفواتير حسب الوقت');
-        const sortedSales = window.sortSalesByTime();
-        
-        // الخطوة 4: إجبار تحديث السجل
-        console.log('\n🔄 الخطوة 4: إجبار تحديث السجل');
-        const refreshResult = window.forceRefreshSalesTable();
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم الإصلاح والترتيب بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`📊 ملخص الإصلاح:`);
-        console.log(`   • فواتير مزيفة محذوفة: ${deleteResult.deleted}`);
-        console.log(`   • فواتير حقيقية مصلحة: ${fixedCount}`);
-        console.log(`   • إجمالي الفواتير المتبقية: ${deleteResult.remaining}`);
-        console.log(`   • تم ترتيب الفواتير حسب الوقت (الأحدث أولاً)`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage(`تم حذف ${deleteResult.deleted} فاتورة مزيفة وإصلاح ${fixedCount} فاتورة حقيقية وترتيب السجل!`, 'success');
-        }
-        
-        return {
-            deleted: deleteResult.deleted,
-            fixed: fixedCount,
-            remaining: deleteResult.remaining,
-            sorted: sortedSales
-        };
-        
-    } catch (error) {
-        console.error('❌ خطأ في الإصلاح الشامل:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في الإصلاح الشامل: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
-// دالة إصلاح شامل مع تحديث السجل
-window.fixAndRefreshEverything = function() {
-    console.log('🚨🚨🚨 إصلاح شامل مع تحديث السجل...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
-    try {
-        // الخطوة 1: إصلاح الفواتير القديمة
-        console.log('🔧 الخطوة 1: إصلاح الفواتير القديمة');
-        const invoiceResult = window.fixAllOldInvoices();
-        
-        // الخطوة 2: إجبار تحديث السجل
-        console.log('\n🔄 الخطوة 2: إجبار تحديث السجل');
-        const refreshResult = window.forceRefreshSalesTable();
-        
-        // الخطوة 3: اختبار شامل
-        console.log('\n🧪 الخطوة 3: اختبار شامل');
-        const testResult = window.testUrgentDayShiftFixUpdated();
-        
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🎉🎉🎉 تم إصلاح وتحديث كل شيء بنجاح!');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        if (typeof showMessage === 'function') {
-            showMessage('تم إصلاح وتحديث كل شيء بنجاح!', 'success');
-        }
-        
-        return {
-            invoices: invoiceResult,
-            refresh: refreshResult,
-            test: testResult
-        };
-        
-    } catch (error) {
-        console.error('❌ خطأ في الإصلاح الشامل:', error);
-        if (typeof showMessage === 'function') {
-            showMessage('خطأ في الإصلاح الشامل: ' + error.message, 'error');
-        }
-        return false;
-    }
-};
-
 // دالة سريعة للفحص والإصلاح في console
 window.quickTimestampFix = function() {
     console.log('🔧 بدء فحص وإصلاح سريع لتوقيت المبيعات...');
@@ -7092,7 +6029,7 @@ function addSupplierLedgerEntry(entry) {
         note: entry.note || '',
         currency: entry.currency || 'USD',
         rate: entry.rate || settings.exchangeRate,
-        created_at: getLocalISOString()
+        created_at: new Date().toISOString()
     };
     supplierLedger.push(e);
     saveToStorage('supplierLedger', supplierLedger);
@@ -7369,7 +6306,7 @@ function confirmPurchaseReturn(billId) {
         amount,
         currency: bill.currency,
         rate: bill.rate,
-        date: getLocalISOString(),
+        date: new Date().toISOString(),
         note: document.getElementById('prNote').value || ''
     });
     saveAllData();
@@ -7428,7 +6365,7 @@ function openPurchase(purchaseId) {
     const currency = isNew ? 'USD' : (purchases.find(p=> p.id===purchaseId)?.currency || 'USD');
     const bill = isNew ? null : purchases.find(p=> p.id===purchaseId);
 
-    if (dateInp) dateInp.value = (bill?.date) || getLocalISOString().split('T')[0];
+    if (dateInp) dateInp.value = (bill?.date) || new Date().toISOString().split('T')[0];
     if (dueInp) dueInp.value = bill?.dueDate || '';
     if (currSel) currSel.value = currency;
     if (rateInp) rateInp.value = bill?.rate || rate;
@@ -7499,7 +6436,7 @@ function removePurchaseItem(idx) {
 
 function savePurchase(payNow) {
     const supplierId = parseInt(document.getElementById('purchaseSupplier').value);
-    const date = document.getElementById('purchaseDate').value || getLocalISOString().split('T')[0];
+    const date = document.getElementById('purchaseDate').value || new Date().toISOString().split('T')[0];
     const dueDate = document.getElementById('purchaseDueDate').value || '';
     const currency = document.getElementById('purchaseCurrency').value || 'USD';
     const rate = Number(document.getElementById('purchaseRate').value) || settings.exchangeRate;
@@ -7552,7 +6489,7 @@ function savePurchase(payNow) {
         supplierPayments.push({
             id: Math.max(0, ...supplierPayments.map(x=>x.id)) + 1,
             supplierId,
-            date: getLocalISOString(),
+            date: new Date().toISOString(),
             currency: payCurrency,
             amount,
             rate,
@@ -9201,7 +8138,7 @@ document.getElementById('processPayment').addEventListener('click', function() {
         }
         
         // حفظ الصندوق وتحديث العرض
-        cashDrawer.lastUpdate = getLocalISOString();
+        cashDrawer.lastUpdate = new Date().toISOString();
         saveToStorage('cashDrawer', cashDrawer);
         updateCashDrawerDisplay();
         
@@ -9295,7 +8232,7 @@ document.getElementById('processPayment').addEventListener('click', function() {
         
         // تسجيل المعاملة
         cashDrawer.transactions.push({
-            timestamp: getLocalISOString(),
+            timestamp: new Date().toISOString(),
             type: 'sale',
             amountReceived: amountPaid,
             receivedCurrency: paymentCurrency,
@@ -9310,7 +8247,7 @@ document.getElementById('processPayment').addEventListener('click', function() {
             }
         });
         
-        cashDrawer.lastUpdate = getLocalISOString();
+        cashDrawer.lastUpdate = new Date().toISOString();
         saveToStorage('cashDrawer', cashDrawer);
         
         // تحديث عرض الصندوق فوراً
@@ -9377,7 +8314,7 @@ document.getElementById('processPayment').addEventListener('click', function() {
                 // });
                 if (!Array.isArray(customer.creditHistory)) customer.creditHistory = [];
                 customer.creditHistory.push({
-                    timestamp: getLocalISOString(),
+                    timestamp: new Date().toISOString(),
                     type: 'settlement',
                     amount: -previousAccountAmount,
                     description: 'تسوية دين سابق عبر بيع نقدي',
@@ -9426,7 +8363,7 @@ document.getElementById('processPayment').addEventListener('click', function() {
     }
     
     const now = new Date();
-    const localDateTimeISO = getLocalISOString();
+    const localDateTimeISO = getLocalDateTimeISO();
     const newSale = {
         id: sales.length + 1,
         invoiceNumber: `INV-${(sales.length + 1).toString().padStart(3, '0')}`,
@@ -10502,7 +9439,7 @@ function returnInvoice(invoiceNumber) {
         
         // إضافة معاملة إيداع للصندوق
         cashDrawer.transactions.push({
-            date: getLocalISOString(),
+            date: new Date().toISOString(),
             type: 'deposit',
             amountUSD: currency === 'USD' ? amount : 0,
             amountLBP: currency === 'LBP' ? amount : 0,
@@ -10538,7 +9475,7 @@ function returnInvoice(invoiceNumber) {
             }
             
             cashDrawer.transactions.push({
-                date: getLocalISOString(),
+                date: new Date().toISOString(),
                 type: 'deposit',
                 amountUSD: currency === 'USD' ? paidAmount : 0,
                 amountLBP: currency === 'LBP' ? paidAmount : 0,
@@ -11136,25 +10073,44 @@ function updateBarcodePreview() {
     }
 }
 
-// طباعة الباركود
+// طباعة الباركود - إصلاح شامل
 function printBarcode() {
-    const productName = document.getElementById('barcodeProductName').textContent;
-    const barcodeNumber = document.getElementById('barcodeNumber').textContent;
-    const quantity = parseInt(document.getElementById('printQuantity').value);
-    const size = document.getElementById('barcodeSize').value;
+    console.log('🖨️ بدء طباعة الباركود...');
     
-    if (barcodeNumber === 'غير محدد') {
-        showMessage('لا يوجد باركود لهذا المنتج', 'error');
-        return;
-    }
-    
-    // إنشاء نافذة طباعة
-    const printWindow = window.open('', '_blank');
-    const printContent = `
+    try {
+        const productName = document.getElementById('barcodeProductName').textContent;
+        const barcodeNumber = document.getElementById('barcodeNumber').textContent;
+        const quantity = parseInt(document.getElementById('printQuantity').value);
+        const size = document.getElementById('barcodeSize').value;
+        
+        if (barcodeNumber === 'غير محدد') {
+            showMessage('لا يوجد باركود لهذا المنتج', 'error');
+            return;
+        }
+        
+        if (!quantity || quantity < 1) {
+            showMessage('يرجى تحديد كمية صحيحة للطباعة', 'error');
+            return;
+        }
+        
+        console.log(`📊 تفاصيل الطباعة: ${quantity} × ${productName} (${barcodeNumber})`);
+        
+        // إنشاء نافذة طباعة محسنة
+        const printWindow = window.open('', '_blank', 'width=600,height=800');
+        
+        if (!printWindow) {
+            console.error('❌ فشل في فتح نافذة الطباعة');
+            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+            return;
+        }
+        
+        const printContent = `
         <!DOCTYPE html>
         <html>
         <head>
             <title>طباعة الباركود - ${productName}</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
             <style>
                 body { 
@@ -11187,10 +10143,14 @@ function printBarcode() {
                     margin-top: 5px;
                 }
                 @media print {
-                    body { margin: 0; }
+                    body { 
+                        margin: 0; 
+                        padding: 5px;
+                    }
                     .barcode-item { 
                         page-break-inside: avoid; 
                         margin: 5px;
+                        border: 1px solid #000;
                     }
                 }
             </style>
@@ -11205,17 +10165,24 @@ function printBarcode() {
             `).join('')}
             
             <script>
+                console.log('🔄 بدء إنشاء الباركودات...');
+                
                 // إنشاء الباركودات البصرية
                 document.addEventListener('DOMContentLoaded', function() {
                     const barcodeWidth = ${size === 'small' ? 1.5 : size === 'large' ? 2.5 : 2};
                     const barcodeHeight = ${size === 'small' ? 40 : size === 'large' ? 60 : 50};
                     const fontSize = ${size === 'small' ? 10 : size === 'large' ? 14 : 12};
                     
+                    console.log('📊 معاملات الباركود:', { barcodeWidth, barcodeHeight, fontSize });
+                    
                     // التأكد من أن الرقم صحيح للـ EAN13
                     let validBarcode = '${barcodeNumber}';
                     if (validBarcode.length !== 13) {
                         validBarcode = validBarcode.padStart(13, '0');
                     }
+                    
+                    let successCount = 0;
+                    let errorCount = 0;
                     
                     for (let i = 0; i < ${quantity}; i++) {
                         try {
@@ -11232,6 +10199,7 @@ function printBarcode() {
                                 textAlign: "center",
                                 textPosition: "bottom"
                             });
+                            successCount++;
                         } catch (error) {
                             console.error('خطأ في إنشاء الباركود EAN13:', error);
                             // محاولة استخدام CODE128 كبديل
@@ -11249,29 +10217,55 @@ function printBarcode() {
                                     textAlign: "center",
                                     textPosition: "bottom"
                                 });
+                                successCount++;
                             } catch (error2) {
                                 console.error('خطأ في إنشاء الباركود CODE128:', error2);
+                                errorCount++;
                             }
                         }
                     }
+                    
+                    console.log(\`✅ تم إنشاء \${successCount} باركود، \${errorCount} أخطاء\`);
+                    
+                    // طباعة تلقائية
+                    setTimeout(() => {
+                        try {
+                            window.focus();
+                            window.print();
+                            
+                            // إغلاق النافذة بعد الطباعة
+                            setTimeout(() => {
+                                window.close();
+                                console.log('✅ تم إغلاق نافذة الطباعة');
+                            }, 1000);
+                        } catch (printError) {
+                            console.error('❌ خطأ في الطباعة:', printError);
+                            window.close();
+                        }
+                    }, 1000);
                 });
             </script>
         </body>
         </html>
-    `;
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // انتظار تحميل المكتبة ثم الطباعة
-    setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-    }, 1000);
-    
-    showMessage(`تم طباعة ${quantity} باركود بصري بنجاح!`, 'success');
-    closePrintBarcode();
+        `;
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // معالجة الأخطاء
+        printWindow.onerror = function(error) {
+            console.error('❌ خطأ في نافذة الطباعة:', error);
+            showMessage('خطأ في نافذة الطباعة', 'error');
+            printWindow.close();
+        };
+        
+        showMessage(`تم بدء طباعة ${quantity} باركود!`, 'success');
+        closePrintBarcode();
+        
+    } catch (error) {
+        console.error('❌ خطأ عام في طباعة الباركود:', error);
+        showMessage('خطأ في طباعة الباركود: ' + error.message, 'error');
+    }
 }
 
 // إغلاق نافذة طباعة الباركود
@@ -11532,7 +10526,7 @@ function initializeAddQuantityFormHandler() {
                         // تقليل الرصيد في الصندوق بالقيمة المدفوعة
                         if (cashDrawer.cashUSD !== undefined) {
                             cashDrawer.cashUSD = (cashDrawer.cashUSD || 0) - totalExpense;
-                            cashDrawer.lastUpdate = getLocalISOString();
+                            cashDrawer.lastUpdate = new Date().toISOString();
                             saveToStorage('cashDrawer', cashDrawer);
                             
                             console.log(`💰 تم تحديث الصندوق: -$${totalExpense.toFixed(2)} (توريد منتج)`);
@@ -12156,59 +11150,200 @@ function showInvoice(sale) {
     showModal('invoiceModal');
 }
 
-// طباعة الفاتورة
+// طباعة الفاتورة - إصلاح شامل
 document.getElementById('printInvoiceBtn').addEventListener('click', function() {
-    const invoiceContent = document.getElementById('invoiceContent').innerHTML;
-    const invoiceHTML = `
+    console.log('🖨️ بدء عملية الطباعة...');
+    
+    try {
+        const invoiceContent = document.getElementById('invoiceContent');
+        if (!invoiceContent) {
+            console.error('❌ لم يتم العثور على محتوى الفاتورة');
+            showMessage('خطأ: لم يتم العثور على محتوى الفاتورة', 'error');
+            return;
+        }
+        
+        const invoiceHTML = `
         <!DOCTYPE html>
         <html dir="${document.documentElement.dir || 'rtl'}">
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${settings.storeName || 'Invoice'}</title>
             <style>
-                @page { size: 80mm auto; margin: 0; }
-                :root { --primary: #111827; --muted: #6b7280; --border: #e5e7eb; }
-                body { font-family: 'Cairo', 'Segoe UI', Arial, sans-serif; direction: inherit; margin: 0; color: #111827; }
-                .invoice-wrapper { width: 80mm; margin: 0 auto; padding: 6mm 4mm; }
-                .invoice-header { display: block; margin-bottom: 4mm; padding-bottom: 3mm; border-bottom: 1px dashed var(--border); }
-                .store-info { text-align: center; }
-                .store-info h2 { margin: 0 0 1mm 0; color: var(--primary); font-size: 14px; }
-                .store-info p { margin: 0; color: var(--muted); font-size: 11px; }
-                .invoice-info { margin-top: 3mm; font-size: 11px; }
-                .invoice-info h3 { margin: 0 0 1mm 0; color: var(--primary); font-size: 12px; }
-                .invoice-info p { margin: 0.5mm 0; color: #444; }
-                .invoice-table { width: 100%; border-collapse: collapse; margin: 3mm 0 1mm; font-size: 11px; }
-                .invoice-table thead { display: none; }
-                .invoice-table td { padding: 2mm 0; border-bottom: 1px dotted var(--border); }
-                .invoice-table td:nth-child(1) { width: 46%; text-align: ${document.documentElement.dir === 'rtl' ? 'right' : 'left'}; }
-                .invoice-table td:nth-child(2) { width: 18%; text-align: center; }
-                .invoice-table td:nth-child(3) { width: 18%; text-align: ${document.documentElement.dir === 'rtl' ? 'left' : 'right'}; }
-                .invoice-table td:nth-child(4) { width: 18%; text-align: ${document.documentElement.dir === 'rtl' ? 'left' : 'right'}; }
-                .invoice-summary { margin-top: 2mm; font-size: 11px; }
-                .summary-row { display: flex; justify-content: space-between; margin: 1mm 0; }
-                .summary-row.total { font-weight: 700; border-top: 1px dashed var(--border); padding-top: 2mm; font-size: 12px; }
-                .footer-note { margin-top: 3mm; text-align: center; color: var(--muted); font-size: 10px; }
-                @media print { body { margin: 0; } .invoice-wrapper { padding: 6mm 4mm; } }
+                @page { 
+                    size: 80mm auto; 
+                    margin: 0; 
+                }
+                :root { 
+                    --primary: #111827; 
+                    --muted: #6b7280; 
+                    --border: #e5e7eb; 
+                }
+                body { 
+                    font-family: 'Cairo', 'Segoe UI', Arial, sans-serif; 
+                    direction: inherit; 
+                    margin: 0; 
+                    color: #111827; 
+                }
+                .invoice-wrapper { 
+                    width: 80mm; 
+                    margin: 0 auto; 
+                    padding: 6mm 4mm; 
+                }
+                .invoice-header { 
+                    display: block; 
+                    margin-bottom: 4mm; 
+                    padding-bottom: 3mm; 
+                    border-bottom: 1px dashed var(--border); 
+                }
+                .store-info { 
+                    text-align: center; 
+                }
+                .store-info h2 { 
+                    margin: 0 0 1mm 0; 
+                    color: var(--primary); 
+                    font-size: 14px; 
+                }
+                .store-info p { 
+                    margin: 0; 
+                    color: var(--muted); 
+                    font-size: 11px; 
+                }
+                .invoice-info { 
+                    margin-top: 3mm; 
+                    font-size: 11px; 
+                }
+                .invoice-info h3 { 
+                    margin: 0 0 1mm 0; 
+                    color: var(--primary); 
+                    font-size: 12px; 
+                }
+                .invoice-info p { 
+                    margin: 0.5mm 0; 
+                    color: #444; 
+                }
+                .invoice-table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin: 3mm 0 1mm; 
+                    font-size: 11px; 
+                }
+                .invoice-table thead { 
+                    display: none; 
+                }
+                .invoice-table td { 
+                    padding: 2mm 0; 
+                    border-bottom: 1px dotted var(--border); 
+                }
+                .invoice-table td:nth-child(1) { 
+                    width: 46%; 
+                    text-align: ${document.documentElement.dir === 'rtl' ? 'right' : 'left'}; 
+                }
+                .invoice-table td:nth-child(2) { 
+                    width: 18%; 
+                    text-align: center; 
+                }
+                .invoice-table td:nth-child(3) { 
+                    width: 18%; 
+                    text-align: ${document.documentElement.dir === 'rtl' ? 'left' : 'right'}; 
+                }
+                .invoice-table td:nth-child(4) { 
+                    width: 18%; 
+                    text-align: ${document.documentElement.dir === 'rtl' ? 'left' : 'right'}; 
+                }
+                .invoice-summary { 
+                    margin-top: 2mm; 
+                    font-size: 11px; 
+                }
+                .summary-row { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    margin: 1mm 0; 
+                }
+                .summary-row.total { 
+                    font-weight: 700; 
+                    border-top: 1px dashed var(--border); 
+                    padding-top: 2mm; 
+                    font-size: 12px; 
+                }
+                .footer-note { 
+                    margin-top: 3mm; 
+                    text-align: center; 
+                    color: var(--muted); 
+                    font-size: 10px; 
+                }
+                @media print { 
+                    body { 
+                        margin: 0; 
+                    } 
+                    .invoice-wrapper { 
+                        padding: 6mm 4mm; 
+                    }
+                }
             </style>
         </head>
         <body>
-            <div class="invoice-wrapper">${invoiceContent}<div class="footer-note">${settings.storeName || ''} - Thank you for your business</div></div>
+            <div class="invoice-wrapper">${invoiceContent.innerHTML}<div class="footer-note">${settings.storeName || ''} - Thank you for your business</div></div>
         </body>
         </html>`;
 
-    // If running inside Electron with exposed API, use IPC to ask main process to print (shows system dialog)
-    if (window.jhAPI && typeof window.jhAPI.printInvoice === 'function') {
-        window.jhAPI.printInvoice(invoiceHTML).catch(err => { console.error('Print failed:', err); showMessage('Print failed: ' + (err && err.message ? err.message : ''), 'error'); });
-        return;
-    }
+        console.log('📄 تم إنشاء HTML للطباعة');
 
-    // Fallback for browsers (not Electron)
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(invoiceHTML);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+        // If running inside Electron with exposed API, use IPC to ask main process to print (shows system dialog)
+        if (window.jhAPI && typeof window.jhAPI.printInvoice === 'function') {
+            console.log('🔌 استخدام Electron API للطباعة');
+            window.jhAPI.printInvoice(invoiceHTML).catch(err => { 
+                console.error('❌ فشل الطباعة:', err); 
+                showMessage('فشل الطباعة: ' + (err && err.message ? err.message : ''), 'error'); 
+            });
+            return;
+        }
+
+        // Fallback for browsers (not Electron)
+        console.log('🌐 استخدام نافذة المتصفح للطباعة');
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        
+        if (!printWindow) {
+            console.error('❌ فشل في فتح نافذة الطباعة - قد يكون بسبب حاجز المنبثقات');
+            showMessage('فشل في فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.', 'error');
+            return;
+        }
+        
+        printWindow.document.write(invoiceHTML);
+        printWindow.document.close();
+        
+        // انتظار تحميل المحتوى ثم الطباعة
+        printWindow.onload = function() {
+            console.log('✅ تم تحميل المحتوى، بدء الطباعة...');
+            setTimeout(() => {
+                try {
+                    printWindow.focus();
+                    printWindow.print();
+                    
+                    // إغلاق النافذة بعد الطباعة
+                    setTimeout(() => {
+                        printWindow.close();
+                        console.log('✅ تم إغلاق نافذة الطباعة');
+                    }, 1000);
+                } catch (printError) {
+                    console.error('❌ خطأ في الطباعة:', printError);
+                    showMessage('خطأ في الطباعة: ' + printError.message, 'error');
+                    printWindow.close();
+                }
+            }, 500);
+        };
+        
+        // معالجة الأخطاء
+        printWindow.onerror = function(error) {
+            console.error('❌ خطأ في نافذة الطباعة:', error);
+            showMessage('خطأ في نافذة الطباعة', 'error');
+            printWindow.close();
+        };
+        
+    } catch (error) {
+        console.error('❌ خطأ عام في الطباعة:', error);
+        showMessage('خطأ في الطباعة: ' + error.message, 'error');
+    }
 });
 
 // تم استبدال دالة حذف المبيعات بنظام الاسترجاع الاحترافي
@@ -14811,7 +13946,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     supplierPayments.push({
                         id: Math.max(0, ...supplierPayments.map(x=>x.id)) + 1,
                         supplierId,
-                        date: getLocalISOString(),
+                        date: new Date().toISOString(),
                         currency: 'USD',
                         amount: paidNow,
                         rate: exchangeRate,
@@ -15074,7 +14209,7 @@ function processReturn() {
         cashDrawer = loadFromStorage('cashDrawer', {
             cashUSD: 100.00,
             cashLBP: 500000,
-            lastUpdate: getLocalISOString(),
+            lastUpdate: new Date().toISOString(),
             transactions: []
         });
         
@@ -15154,7 +14289,7 @@ function processReturn() {
         
         // إضافة سجل معاملة
         cashDrawer.transactions.push({
-            timestamp: getLocalISOString(),
+            timestamp: new Date().toISOString(),
             type: 'refund',
             amount: refundAmount,
             description: `استرجاع ${returnType === 'full' ? 'كامل' : 'جزئي'} للفاتورة ${currentSaleForReturn.invoiceNumber} - المبلغ المرجع: ${refundDetails.join(' + ')}`,
@@ -15164,7 +14299,7 @@ function processReturn() {
             }
         });
         
-        cashDrawer.lastUpdate = getLocalISOString();
+        cashDrawer.lastUpdate = new Date().toISOString();
         console.log('💳 الصندوق بعد الاسترجاع:', { USD: cashDrawer.cashUSD, LBP: cashDrawer.cashLBP });
         saveToStorage('cashDrawer', cashDrawer);
         updateCashDrawerDisplay();
@@ -15185,7 +14320,7 @@ function processReturn() {
                 customer.currentDebt = customer.creditBalance;
                 if (!Array.isArray(customer.creditHistory)) customer.creditHistory = [];
                 customer.creditHistory.push({
-                    timestamp: getLocalISOString(),
+                    timestamp: new Date().toISOString(),
                     type: 'refund',
                     amount: -refundAmount,
                     description: `استرجاع على الفاتورة ${currentSaleForReturn.invoiceNumber}`,
@@ -15223,7 +14358,7 @@ function processReturn() {
             discountPct: it.discountPct
         }));
         const now = new Date();
-        const localDateTimeISO = getLocalISOString();
+        const localDateTimeISO = getLocalDateTimeISO();
         const refundInvoice = {
             id: generateInvoiceId(),
             invoiceNumber: `RF-${(sales.length + 1).toString().padStart(3, '0')}`,
@@ -15484,8 +14619,7 @@ function testDashboard() {
     const testSale = {
         id: sales.length + 1,
         invoiceNumber: `TEST-${Date.now()}`,
-        date: getLocalISOString().split('T')[0],
-        timestamp: getLocalISOString(),
+        date: new Date().toISOString().split('T')[0],
         customer: 'عميل تجريبي',
         amount: 50.00,
         paymentMethod: 'نقدي',
@@ -15849,12 +14983,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // تحديث الصندوق
             cashDrawer.cashUSD = newUSD;
             cashDrawer.cashLBP = newLBP;
-            cashDrawer.lastUpdate = getLocalISOString();
+            cashDrawer.lastUpdate = new Date().toISOString();
             
             // إضافة معاملة توضيحية
             if (diffUSD !== 0 || diffLBP !== 0) {
                 cashDrawer.transactions.push({
-                    date: getLocalISOString(),
+                    date: new Date().toISOString(),
                     type: 'adjustment',
                     amountUSD: diffUSD,
                     amountLBP: diffLBP,
@@ -17595,7 +16729,7 @@ function generateInvoiceId() {
 // إنشاء فاتورة البيع بالدين
  function createCreditSaleInvoice(customer, amount) {
     const now = new Date();
-    const localDateTimeISO = getLocalISOString();
+    const localDateTimeISO = getLocalDateTimeISO();
     const invoice = {
         id: generateInvoiceId(),
         invoiceNumber: `CR-${(sales.length + 1).toString().padStart(3, '0')}`,
