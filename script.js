@@ -925,11 +925,12 @@ function renderProfitReports() {
             sale.items.forEach(item => {
                 const quantity = parseInt(item.quantity) || 1;
                 const itemPrice = getItemFinalPrice(item);
-                const itemCost = getItemCost(item);
+                const itemCost = getItemCost(item);  // 🔥 يقرأ من item.costUSD (المحفوظ في الفاتورة) أولاً
                 
-                // تطبيق المعادلات الصحيحة
-                // sales_total = SUM(line.qty * line.price_after_discount_tax_included)
-                // cost_total = SUM(line.qty * line.cost)
+                // 🔥 تطبيق المعادلات الصحيحة (حسب المطلوب)
+                // sales_total += sum(line.qty * price_after_discount)
+                // cost_total  += sum(line.qty * cost)
+                // profit      = sales_total - cost_total
                 const totalPrice = itemPrice * quantity;
                 const totalCost = itemCost * quantity;
                 
@@ -946,10 +947,10 @@ function renderProfitReports() {
                 const finalGross = saleGross * sign;
                 const finalCost = saleCost * sign;
                 
-                // تحديث بيانات اليوم
-                dailyData[dayKey].grossSales += finalGross;
-                dailyData[dayKey].costOfGoods += finalCost;
-                dailyData[dayKey].netProfit = dailyData[dayKey].grossSales - dailyData[dayKey].costOfGoods;
+                // 🔥 تحديث بيانات اليوم - الحساب الصحيح للربح
+                dailyData[dayKey].grossSales += finalGross;    // sales_total += إجمالي البيع
+                dailyData[dayKey].costOfGoods += finalCost;     // cost_total += إجمالي التكلفة
+                dailyData[dayKey].netProfit = dailyData[dayKey].grossSales - dailyData[dayKey].costOfGoods;  // profit = sales_total - cost_total
                 
                 if (isRefund) {
                     dailyData[dayKey].refundCount++;
@@ -7669,6 +7670,7 @@ function addToCart(product) {
         
         existingItem.priceUSD = updatedProduct.priceUSD;
         existingItem.priceLBP = updatedProduct.priceLBP;
+        existingItem.costUSD = updatedProduct.costUSD;  // 🔥 تحديث التكلفة أيضاً
         existingItem.prices = JSON.parse(JSON.stringify(updatedProduct.prices));
         existingItem.stock = updatedProduct.stock;
         existingItem.name = updatedProduct.name;
@@ -8267,6 +8269,10 @@ document.getElementById('processPayment').addEventListener('click', function() {
         const originalUSD = item.priceUSD;
         const discountUSD = Math.max(0, originalUSD - baseUSD);
         const discountPct = originalUSD > 0 ? +(discountUSD / originalUSD * 100).toFixed(1) : 0;
+        
+        // 🔥 إصلاح: حفظ التكلفة (costUSD) في الفاتورة لحساب الربح الصحيح
+        const itemCost = item.costUSD || 0;
+        
         saleItems.push({
             id: item.id,
             name: item.name,
@@ -8275,7 +8281,8 @@ document.getElementById('processPayment').addEventListener('click', function() {
             originalPriceUSD: originalUSD,
             finalPriceUSD: baseUSD,
             discountUSD: discountUSD,
-            discountPct: discountPct
+            discountPct: discountPct,
+            costUSD: itemCost  // 🔥 حفظ التكلفة وقت البيع
         });
         
         // تحديث المخزون لكل أنواع البيع (نقدي/جزئي/دين)
@@ -16746,6 +16753,8 @@ function generateInvoiceId() {
             const originalUSD = item.priceUSD || baseUSD;
             const discountUSD = Math.max(0, originalUSD - baseUSD);
             const discountPct = originalUSD > 0 ? +((discountUSD / originalUSD) * 100).toFixed(1) : 0;
+            // 🔥 إصلاح: حفظ التكلفة (costUSD) في الفاتورة لحساب الربح الصحيح
+            const itemCost = item.costUSD || 0;
             return {
                 id: item.id,
                 name: item.name,
@@ -16754,7 +16763,8 @@ function generateInvoiceId() {
                 originalPriceUSD: originalUSD,
                 finalPriceUSD: baseUSD,
                 discountUSD,
-                discountPct
+                discountPct,
+                costUSD: itemCost  // 🔥 حفظ التكلفة وقت البيع
             };
         })
     };
